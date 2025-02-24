@@ -201,7 +201,7 @@ class IB_Crude_Alert(Base):
                 cpl, fd_vpoc, td_vpoc, exp_range
                 )
             open_type = self.open_type(
-                a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low
+                a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low
                 )
             vwap_slope, vwap_type = self.slope_to_vwap(
                 delta_price, scale_price=1.0, scale_time=1.0

@@ -28,7 +28,7 @@ import os
 # IBGP
 # XTFD
 # Add playbook logging (So we can see what is being sent to discord)
-# Dont Bake in Narrative into playbook logic
+
 # ------------------------------------------------------------ #
 
 def main():
@@ -46,7 +46,7 @@ def main():
     es_bias, nq_bias, rty_bias, cl_bias = initialization.grab_bias(external_bias)
     config.set_bias(es_bias, nq_bias, rty_bias, cl_bias)
     # ---------------------- Publish Prep PDFs to Slack ------------------------ #
-    #initialization.publish_prep()
+    initialization.publish_prep()
     ib_equity_alert = IB_Equity_Alert(files)
     ib_crude_alert = IB_Crude_Alert(files)
     economic_alert = Economic(files)
