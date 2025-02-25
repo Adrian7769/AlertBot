@@ -266,13 +266,7 @@ class TRCT(Base):
         return embed 
     
     def execute(self):
-        
         embed = self.discord_message()
-        webhook_url = self.discord_webhooks_playbook.get(self.product_name)
-        
-        if webhook_url:
-            self.send_playbook_embed(embed)  # Omitting username and avatar_url to use webhook's defaults
-            logger.info(f" TRCT | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
-        else:
-            logger.debug(f" TRCT | execute | Product: {self.product_name} | Note: No Discord Webhook Configured")
+        self.send_playbook_embed(embed, username=None, avatar_url=None)  
+        logger.info(f" TRCT | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
             

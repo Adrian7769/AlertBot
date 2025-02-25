@@ -3,12 +3,10 @@ import logging
 from discord_webhook import DiscordWebhook
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
-from logs.Logging_Config import setup_logging
 from dotenv import load_dotenv
 from typing import Optional
 
 load_dotenv()
-setup_logging()
 logger = logging.getLogger(__name__)
 
 class Base:
@@ -94,12 +92,20 @@ class Base:
         else:
             logger.warning(f"No Discord webhook URL configured for the product '{self.product_name}'.")
     def send_playbook_embed(self, embed, username=None, avatar_url=None):
+        logger.debug(f"Product name: {self.product_name}")
         webhook_url = self.discord_webhooks_playbook.get(self.product_name)
-        self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
+        if webhook_url:    
+            logger.debug(f"webhook {webhook_url}")
+            self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
+        else:
+            logger.error(f"No Discord Webhook Configured for {self.product_name}")
     def send_alert_embed(self, embed, username=None, avatar_url=None):
-        logger.info(f"Product name: {self.product_name}")
+        logger.debug(f"Product name: {self.product_name}")
         webhook_url = self.discord_webhooks_alert.get(self.product_name)
-        logger.info(f"webhook {webhook_url}")
-        self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
+        if webhook_url:
+            logger.debug(f"webhook {webhook_url}")
+            self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
+        else:
+            logger.error(f"No Discord Webhook Configured for {self.product_name}")
     def get_color(self):
         return self.product_color.get(self.product_name, 0x808080)     

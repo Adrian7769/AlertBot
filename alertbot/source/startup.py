@@ -12,6 +12,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
+import time as time_module
 
 logger = logging.getLogger(__name__)
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -46,8 +47,8 @@ class Initialization(Base):
         rty_impvol = float(output_impvol['rty_impvol'].strip('%'))
         cl_impvol = float(output_impvol['cl_impvol'].strip('%'))
         
-        logger.debug(f" Startup | grab_impvol | ES_IMP: {es_impvol} | NQ_IMP: {nq_impvol} | RTY_IMP: {rty_impvol} | CL_IMP: {cl_impvol}")
-        return es_impvol, nq_impvol, rty_impvol, cl_impvol
+        logger.debug(f" Startup | grab_impvol | ES_IMP: {es_impvol*100} | NQ_IMP: {nq_impvol*100} | RTY_IMP: {rty_impvol*100} | CL_IMP: {cl_impvol*100}")
+        return es_impvol*100, nq_impvol*100, rty_impvol*100, cl_impvol*100
     
     def grab_bias(self, external_bias):
         output_bias = {}
@@ -187,6 +188,30 @@ class Initialization(Base):
                 continue
         logger.info("Startup | publish_prep | Completed publish_prep function.")
     def prep_data(files):
+        def safe_read_csv(filepath, **kwargs):
+            max_retries = 5
+            delay = 0.5
+            last_size = -1
+            for attempt in range(max_retries):
+                try:
+                    current_size = os.path.getsize(filepath)
+                except OSError as e:
+                    logger.error(f"Error getting file size for {filepath}: {e}")
+                    time_module.sleep(delay)
+                    continue
+                if current_size == last_size and current_size > 0:
+                    try:
+                        df = pd.read_csv(filepath, **kwargs)
+                        if not df.empty:
+                            return df
+                    except pd.errors.EmptyDataError:
+                        logger.debug(f"File {filepath} is empty. Retrying...")
+                    except Exception as e:
+                        logger.error(f"Error reading {filepath}: {e}")
+                else:
+                    last_size = current_size
+                time_module.sleep(delay)
+            raise ValueError(f"Failed to read stable data from {filepath} after {max_retries} attempts.")
         all_variables = {}
         period_equity = {
             'A': time(9, 30),
@@ -238,9 +263,9 @@ class Initialization(Base):
             if not process_task:
                 continue
             if task["header_row"] == 1:
-                data = pd.read_csv(task["filepath"], delimiter='\t', header=None)
+                data = safe_read_csv(task["filepath"], delimiter='\t', header=None)
             elif task["header_row"] == 0:
-                data = pd.read_csv(task["filepath"], delimiter='\t')
+                data = safe_read_csv(task["filepath"], delimiter='\t')
                 data = data.reset_index()
             else:
                 raise ValueError("header_row should be either 0 or 1")

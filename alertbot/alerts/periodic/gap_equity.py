@@ -58,6 +58,7 @@ class Gap_Check_Equity(Base):
         else:
             gap = "No Gap"
             gap_tier = "Tier 0"
+            gap_size = 0
         
         return gap, gap_tier, gap_size
        
@@ -133,17 +134,7 @@ class Gap_Check_Equity(Base):
                     embed.add_embed_field(name=":alarm_clock: Alert Time", value=f"_{current_time}_ EST", inline=False)
 
                     # Send the embed with the webhook
-                    webhook_url = self.discord_webhooks_playbook.get(product_name)
-                    if webhook_url:
-                        webhook = DiscordWebhook(url=webhook_url, username="Gap Checker Alert", content=f"Context Alert - Gap for {product_name}")
-                        webhook.add_embed(embed)
-                        response = webhook.execute()
-                        if response.status_code == 200 or response.status_code == 204:
-                            logger.info(f" GAP_EQUITY | process_product | Note: Message sent to Discord webhook for {product_name}")
-                        else:
-                            logger.error(f" GAP_EQUITY | process_product | Note: Failed to send message to Discord webhook for {product_name} | Status Code: {response.status_code}")
-                    else:
-                        logger.error(f" GAP_EQUITY | process_product | Note: No Discord webhook configured for {product_name}")
+                    self.send_alert_embed(embed, username=None, avatar_url=None)
                 except Exception as e:
                     logger.error(f" GAP_EQUITY | process_product | Product: {product_name} | Error sending Discord message: {e}")
             else:
