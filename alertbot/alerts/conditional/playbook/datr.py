@@ -5,7 +5,7 @@ from datetime import datetime
 from alertbot.utils import config
 from discord_webhook import DiscordEmbed
 from alertbot.alerts.base import Base
-
+from alertbot.source.database import AlertTracker
 logger = logging.getLogger(__name__)
 
 last_alerts = {}
@@ -329,6 +329,18 @@ class DATR(Base):
     
     def execute(self):
         embed = self.discord_message()
-        self.send_playbook_embed(embed, username=None, avatar_url=None)  
+        self.send_playbook_embed(embed, username=None, avatar_url=None)
         logger.info(f" DATR | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
-            
+        
+        # Immediately capture alert details
+        alert_details = {
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'time': datetime.now().strftime('%H:%M:%S'),
+            'product': self.product_name,
+            'playbook': '#DATR',
+            'direction': self.direction,
+            'alert_price': self.cpl,
+            'score': self.score,
+            'target': self.prior_mid,  
+        }
+                
