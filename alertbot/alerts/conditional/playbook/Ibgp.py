@@ -5,7 +5,7 @@ from datetime import datetime
 from alertbot.utils import config
 from discord_webhook import DiscordEmbed
 from alertbot.alerts.base import Base
-
+from alertbot.source.alert_logger import log_alert_async
 logger = logging.getLogger(__name__)
 
 last_alerts = {}
@@ -261,6 +261,16 @@ class IBGP(Base):
     
     def execute(self):
         embed = self.discord_message()
-        self.send_playbook_embed(embed, username=None, avatar_url=None)  
-        logger.info(f" IBGP | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
-            
+        self.send_playbook_embed(embed, username=None, avatar_url=None)
+        logger.info(f"IBGP | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
+        alert_details = {
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'time': datetime.now().strftime('%H:%M:%S'),
+            'product': self.product_name,
+            'playbook': '#IBGP',
+            'direction': self.direction,
+            'alert_price': self.cpl,
+            'score': self.score,
+            'target': self.prior_mid,
+        }
+        log_alert_async(alert_details)
