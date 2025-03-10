@@ -40,6 +40,9 @@ class DOGW(Base):
         self.day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
         self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)        
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')
+        self.overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
+        self.overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)    
+            
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
@@ -99,7 +102,6 @@ class DOGW(Base):
                 open_type = "OTD ^"
                 logger.debug("DOGW | open_type_algorithm | Condition met: OTD ^")
             else:
-                # Only trigger OAOR if there is a tier 2 gap present?
                 logger.debug("DOGW | open_type_algorithm | Condition met: Wait (A period no specific open type)")
         else:
             if self.b_high == 0 and self.b_low == 0:
@@ -198,31 +200,36 @@ class DOGW(Base):
         return total_delta   
         
     # ---------------------------------- Driving Input Logic ------------------------------------ #   
-    def input(self): # This is where the critical criteria go
+    def input(self):
         
         self.used_atr = self.ib_high - self.ib_low
         self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-        self.target = f"40% of average IB Left to target"
         
-        # Direction Based Logic
-        if self.direction == "short":
-            self.or_condition = self.cpl < self.orl
-        elif self.direction == "long":
+        if self.direction == "long":
+            self.target = self.ib_low + self.ib_atr
             self.or_condition = self.cpl > self.orh
+        elif self.direction == "short":
+            self.target = self.ib_high - self.ib_atr
+            self.or_condition = self.cpl < self.orl
         else:
+            self.target = None
             self.atr_condition = False
-            self.or_condition = False
-                        
+            self.or_condition = False  
+                    
+        self.atr_condition = self.remaining_atr >= 0.4 * self.ib_atr
+                            
         # Driving Input
         logic = (
-            self.opentype
+            self.opentype 
             in 
             ["OD v", "OD ^", "OTD v", "OTD ^", "ORR ^", "ORR v", "OAOR ^", "OAOR v"]
             and 
             self.or_condition
-            and
+            and 
             self.atr_condition
-            ) 
+            and 
+            self.day_high <= self.ib_high and self.day_low >= self.ib_low
+        )
         
         logger.debug(f"DOGW | input | Product: {self.product_name} | LOGIC: {logic}")
         
@@ -253,8 +260,17 @@ class DOGW(Base):
     # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
         
-        # Define Direction
-        self.direction = "short" if self.opentype in ["OD v", "OTD v", "ORR v", "OAOR v"] else "long"
+        if self.opentype == "OAIR":
+            logger.debug("DOGW | check | Open type is OAIR; returning False.")
+            return False
+        elif self.opentype in ["OD v", "OTD v", "OAOR v", "ORR v"]:
+            self.direction = "short"
+        elif self.opentype in ["OD ^", "OTD ^", "OAOR ^", "ORR ^"]:
+            self.direction = "long"
+        else:
+            logger.debug("DOGW | check | Open type not recognized; returning False.")
+            return False
+        
         self.color = "red" if self.direction == "short" else "green"
     
         # Driving Input
@@ -268,22 +284,21 @@ class DOGW(Base):
                     logger.info(f"DOGW | check | Product: {self.product_name} | Note: Condition Met")
                     
                     # Logic 40% Atr Left
-                    if self.atr_condition: 
+                    if self.atr_condition == True: 
                         self.c_within_atr = "x" 
                     else:
                         self.c_within_atr = "  "
-                    # Logic For VWAP Slope
-                    self.c_between = "  "
-                    if self.direction == "short" and self.p_vpoc < self.cpl < self.eth_vwap:
-                        self.c_between = "x"
-                    elif self.direction == "long" and self.eth_vwap < self.cpl < self.p_vpoc:
-                        self.c_between = "x"
                     # Logic for 50% of ETH Expected Range Left
-                    if abs(self.eth_vwap - self.p_vpoc) <= (self.exp_rng * 0.05):
-                        self.c_align = "x"
+                    if (self.overnight_high - self.overnight_low) <= (self.exp_rng*0.5):
+                        self.c_exp_rng = "x"
                     else: 
-                        self.c_align = "  "  
-         
+                        self.c_exp_rng = "  "  
+                    # Logic For VWAP Slope
+                    self.c_vwap_slope = "  "
+                    if self.direction == "short" and self.vwap_slope < -0.10:
+                        self.c_vwap_slope = "x"
+                    elif self.direction == "long" and self.vwap_slope > 0.10:
+                        self.c_vwap_slope = "x"         
                     # Logic For Orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
@@ -306,10 +321,10 @@ class DOGW(Base):
                     if self.rvol > 1.20:
                         self.c_rvol = "x"
                     else:
-                        self.c_rvol = " "                    
+                        self.c_rvol = "  "                    
                                             
                     # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol,] if condition == "x")   
+                    self.score = sum(1 for condition in [self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_vwap_slope, self.c_within_atr] if condition == "x")   
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -328,48 +343,48 @@ class DOGW(Base):
         
         direction_settings = {
             "long": {
-                "pv_indicator": "^",
-                "c_euro_ib_text": "Above Euro IBH",
-                "c_or_text": "Above 30 Sec Opening Range High",
-                "emoji_indicator": "🔼",
-                "color_circle": "🔵"
+                "risk": "Below",
+                "criteria": "Above",
+                "or": "High",
+                "euro": "IBH"
+
             },
             "short": {
-                "pv_indicator": "v",
-                "c_euro_ib_text": "Below Euro IBL",
-                "c_or_text": "Below 30 Sec Opening Range Low",
-                "emoji_indicator": "🔽",
-                "color_circle": "🔴"
+                "risk": "Above",
+                "criteria": "Below",
+                "or": "Low",
+                "euro": "IBL"
             }
         }
 
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f"PVAT | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f"DOGW | discord_message | Note: Invalid direction '{self.direction}'")
         
-        title = f"{settings['color_circle']} **{self.product_name} - Playbook Alert** {settings['emoji_indicator']} **PVAT {settings['pv_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **DOGW - {self.opentype}**"
 
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.p_vpoc} (Prior Session Vpoc)_\n"
-                f"**Risk**: _Wrong if auction fails to complete PVPOC test before IB, or accepts away from value_\n"
-                f"**Driving Input**: _Auction opening in range or slightly outside range, divergent from prior session Vpoc_\n"
+                f"**Destination**: _{self.target} (Avg Range IB)_\n"
+                f"**Risk**: Wrong if price accepts {settings['risk']} HWB of A period or {settings['risk']} ETH VWAP.\n"
+                f"**Driving Input**: Auction is presenting a directional open type.\n"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()
         
         embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
-
+        
+        # Confidence
         criteria = (
-            f"• **[{self.c_within_atr}]** Target Within ATR Of IB\n"
-            f"• **[{self.c_orderflow}]** Orderflow In Direction Of Target (_{self.delta}_) \n"
-            f"• **[{self.c_euro_ib}]** {settings['c_euro_ib_text']}\n"
-            f"• **[{self.c_or}]** {settings['c_or_text']}\n"
-            f"\n• **[{self.c_between}]** Between DVWAP and PVPOC\n"
-            f"Or\n"
-            f"• **[{self.c_align}]** DVWAP and PVPOC aligned\n"
+            f"• **[{self.c_within_atr}]** 40% Of Average IB Left To Target\n"
+            f"• **[{self.c_exp_rng}]** 50% Of ETH Expected Range Left\n"
+            f"• **[{self.c_vwap_slope}]** Strong Slope To VWAP\n"
+            f"• **[{self.c_orderflow}]** Supportive Cumulative Delta (*_{self.delta}_*)\n"
+            f"• **[{self.c_vwap_slope}]** Elevated RVOL (*_{self.rvol}%_*)\n"
+            f"• **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
+            f"• **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
@@ -389,10 +404,10 @@ class DOGW(Base):
             'date': datetime.now().strftime('%Y-%m-%d'),
             'time': datetime.now().strftime('%H:%M:%S'),
             'product': self.product_name,
-            'playbook': '#DOGW',
+            'playbook': f'#DOGW {self.opentype}',
             'direction': self.direction,
             'alert_price': self.cpl,
             'score': self.score,
-            'target': self.prior_mid,
+            'target': self.target,
         }
         log_alert_async(alert_details)

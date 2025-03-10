@@ -268,6 +268,8 @@ class DATR(Base):
         
         direction_settings = { 
             "Higher": {
+                "target": f"{self.prior_high}",
+                "destination": "High",
                 "pv_indicator": "^",
                 "risk": "above",
                 "trend": "higher",
@@ -277,6 +279,8 @@ class DATR(Base):
                 "c_vwap": "Above",
             },
             "Lower": {
+                "target": f"{self.prior_low}",
+                "destination": "Low",
                 "pv_indicator": "v",
                 "risk": "below",
                 "trend": "lower",
@@ -297,7 +301,7 @@ class DATR(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.prior_low} (Prior Session Low)_\n"
+                f"**Destination**: _{settings['risk']} (Prior Session {settings['destination']})_\n"
                 f"**Risk**: _Wrong if price accepts {settings['risk']} HWB of prior session_\n"
                 f"**Driving Input**: _Prior Day was a trend {settings['trend']}_\n"
             ),

@@ -288,6 +288,6 @@ class PVAT(Base):
             'direction': self.direction,
             'alert_price': self.cpl,
             'score': self.score,
-            'target': self.prior_mid,
+            'target': self.p_vpoc,
         }
         log_alert_async(alert_details)
