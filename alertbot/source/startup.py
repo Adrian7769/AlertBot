@@ -291,6 +291,7 @@ class Initialization(Base):
             match task["name"]:
                 case "ES_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['ES_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['ES_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['ES_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
                     variables['ES_DAY_LOW'] = float(data.iloc[0]['[ID2.SG3] Day_Low'])
@@ -358,7 +359,6 @@ class Initialization(Base):
                 case "ES_2":
                     # ------------------- Use Integer Based Loc ----------------------- #
                     variables['ES_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
-                    variables['ES_ETH_VWAP_P2'] = float(data.iloc[2]['[ID7.SG1] ETH_VWAP'])
                     variables['ES_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
                     variables['ES_ETH_BOTTOM_1'] = float(data.iloc[0]['[ID7.SG3] Bottom_1'])
                     variables['ES_ETH_TOP_2'] = float(data.iloc[0]['[ID7.SG4] Top_2'])
@@ -399,6 +399,7 @@ class Initialization(Base):
                     variables['ES_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "NQ_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['NQ_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['NQ_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['NQ_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
                     variables['NQ_DAY_LOW'] = float(data.iloc[0]['[ID2.SG3] Day_Low'])
@@ -463,7 +464,6 @@ class Initialization(Base):
                             pass
                 case "NQ_2":
                     variables['NQ_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
-                    variables['NQ_ETH_VWAP_P2'] = float(data.iloc[2]['[ID7.SG1] ETH_VWAP'])
                     variables['NQ_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
                     variables['NQ_ETH_BOTTOM_1'] = float(data.iloc[0]['[ID7.SG3] Bottom_1'])
                     variables['NQ_ETH_TOP_2'] = float(data.iloc[0]['[ID7.SG4] Top_2'])
@@ -504,6 +504,7 @@ class Initialization(Base):
                     variables['NQ_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "RTY_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['RTY_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['RTY_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['RTY_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
                     variables['RTY_DAY_LOW'] = float(data.iloc[0]['[ID2.SG3] Day_Low'])
@@ -570,7 +571,6 @@ class Initialization(Base):
                             pass
                 case "RTY_2":
                     variables['RTY_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
-                    variables['RTY_ETH_VWAP_P2'] = float(data.iloc[2]['[ID7.SG1] ETH_VWAP'])
                     variables['RTY_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
                     variables['RTY_ETH_BOTTOM_1'] = float(data.iloc[0]['[ID7.SG3] Bottom_1'])
                     variables['RTY_ETH_TOP_2'] = float(data.iloc[0]['[ID7.SG4] Top_2'])
@@ -611,6 +611,7 @@ class Initialization(Base):
                     variables['RTY_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "CL_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['CL_VWAP_SLOPE'] = float(data.iloc[0]['[ID21.SG2] Vwap_Slope'])
                     variables['CL_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['CL_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
                     variables['CL_DAY_LOW'] = float(data.iloc[0]['[ID2.SG3] Day_Low'])
@@ -671,7 +672,6 @@ class Initialization(Base):
                             pass
                 case "CL_2":
                     variables['CL_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
-                    variables['CL_ETH_VWAP_P2'] = float(data.iloc[2]['[ID7.SG1] ETH_VWAP'])
                     variables['CL_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
                     variables['CL_ETH_BOTTOM_1'] = float(data.iloc[0]['[ID7.SG3] Bottom_1'])
                     variables['CL_ETH_TOP_2'] = float(data.iloc[0]['[ID7.SG4] Top_2'])

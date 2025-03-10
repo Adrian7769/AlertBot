@@ -28,25 +28,6 @@ class IB_Equity_Alert(Base):
         
         return ib_range, ib_type, round((ib_vatr*100), 2)
 
-    def slope_to_vwap(self, delta_price, scale_price=1.0, scale_time=1.0):
-        delta_time = 0.5
-        
-        delta_y = delta_price * scale_price
-        delta_x = delta_time * scale_time
-        slope = delta_y / delta_x
-        
-        theta_radians = math.atan(slope)
-        theta_degrees = round((math.degrees(theta_radians)), 2)
-        
-        if theta_degrees >= 10:
-            vwap_type = 'Strong' 
-        else:
-            vwap_type = 'Flat'
-            
-        logger.debug(f" IB_EQUITY | slope_to_vwap | delta_x: {delta_price} | delta_y: {delta_y} | slope: {slope} | theta_degrees: {theta_degrees} | Note: Complete")
-            
-        return theta_degrees, vwap_type
-        
     def exp_range_info(self, prior_close, cpl, ovn_to_ibh, ovn_to_ibl, impvol):
         
         exp_range = round(((prior_close * (impvol / 100)) * math.sqrt(1 / 252)), 2)
@@ -215,9 +196,7 @@ class IB_Equity_Alert(Base):
             overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)
             day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
             day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2) 
-            eth_vwap = variables.get(f'{product_name}_ETH_VWAP')
-            eth_vwap_pt = variables.get(f'{product_name}_ETH_VWAP_P2') 
-            delta_price = abs(eth_vwap - eth_vwap_pt)
+            vwap_slope = (variables.get(f'{product_name}_VWAP_SLOPE'))
 
             # Implied volatility specific to the product
             if product_name == 'ES':
@@ -248,9 +227,11 @@ class IB_Equity_Alert(Base):
             open_type = self.open_type(
                 a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low
                 )
-            vwap_slope, vwap_type = self.slope_to_vwap(
-                delta_price, scale_time=1.0, scale_price=1.0
-                )
+            
+            if vwap_slope > 0.10 or vwap_slope < -0.10:
+                vwap_type = "Strong"
+            else:
+                vwap_type = "Weak"
             
             # Build the Discord Embed
             try:
@@ -260,7 +241,7 @@ class IB_Equity_Alert(Base):
                     description=(
                         f"**Open Type**: _{open_type}_\n"
                         f"**{ib_type}**: _{ib_range}p_ = _{round(ib_vatr, 2)}%_ of Avg\n"
-                        f"**Vwap {vwap_type}**: _{vwap_slope}°_\n"
+                        f"**Vwap {vwap_type}**: _{vwap_slope*100}_\n"
                     ),
                     color=self.get_color()
                 )

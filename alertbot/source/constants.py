@@ -125,12 +125,37 @@ conditions = [
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },   
+    {
+        "name": "DOGW_ES",
+        "required_files": [],
+        "start_time": datetime_time(9, 40), 
+        "end_time": datetime_time(10, 30),
+    },   
+    {
+        "name": "DOGW_NQ",
+        "required_files": [],
+        "start_time": datetime_time(9, 40), 
+        "end_time": datetime_time(10, 30),
+    },   
+    {
+        "name": "DOGW_RTY",
+        "required_files": [],
+        "start_time": datetime_time(9, 40), 
+        "end_time": datetime_time(10, 30),
+    },   
+    {
+        "name": "DOGW_CL",
+        "required_files": [],
+        "start_time": datetime_time(9, 10), 
+        "end_time": datetime_time(10, 0),
+    },     
 ]
 condition_functions = {
     "PVAT": PVAT,
     "DATR": DATR,
     "PREIB": PRE_IB_BIAS,
     "NEUTRAL": NEUTRAL,
+    "DOGW": DOGW,
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
