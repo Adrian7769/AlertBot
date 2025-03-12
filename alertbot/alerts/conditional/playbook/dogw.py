@@ -14,9 +14,8 @@ last_alerts_lock = threading.Lock()
 class DOGW(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
-        
+ 
         # Variables (Round All Variables)
-        self.p_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
         self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
         self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
         self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
@@ -29,7 +28,6 @@ class DOGW(Base):
         self.a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
         self.b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
         self.b_low = round(variables.get(f'{product_name}_B_LOW'), 2)
-        self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
         self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
         self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
         self.total_rth_delta = round(self.variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
@@ -42,12 +40,10 @@ class DOGW(Base):
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')
         self.overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
         self.overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)    
-            
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
         self.cl_impvol = config.cl_impvol 
-        
         self.delta = self.total_delta()
         self.exp_rng, self.exp_hi, self.exp_lo = self.exp_range() 
         self.opentype = self.open_type_algorithm()
@@ -274,7 +270,7 @@ class DOGW(Base):
         self.color = "red" if self.direction == "short" else "green"
     
         # Driving Input
-        if self.input() and self.time_window():
+        if self.time_window() and self.input():
             
             with last_alerts_lock:
                 last_alert = last_alerts.get(self.product_name)   

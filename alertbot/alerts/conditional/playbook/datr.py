@@ -88,8 +88,6 @@ class DATR(Base):
         return total_delta 
       
     def prior_day(self):
-        
-        
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
             day_type = "Non-Trend"
         elif (self.prior_low < self.prior_ibl and self.prior_high > self.prior_ibh and 
@@ -209,7 +207,7 @@ class DATR(Base):
         self.color = "red" if self.direction == "Lower" else "green"
            
         # Driving Input
-        if self.input() and self.time_window():
+        if self.time_window() and self.input():
             
             with last_alerts_lock:
                 last_alert = last_alerts.get(self.product_name)   

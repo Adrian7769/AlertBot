@@ -158,7 +158,7 @@ class PVAT(Base):
         self.color = "red" if self.direction == "short" else "green"
     
         # Driving Input
-        if self.input() and self.time_window():
+        if self.time_window() and self.input():
             
             with last_alerts_lock:
                 last_alert = last_alerts.get(self.product_name)   
