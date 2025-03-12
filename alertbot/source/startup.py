@@ -5,7 +5,7 @@ from discord_webhook import DiscordEmbed
 import logging
 from alertbot.source.constants import *
 from alertbot.alerts.base import Base
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 import os 
 from googleapiclient.errors import HttpError
@@ -306,13 +306,13 @@ class Initialization(Base):
                     variables['ES_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
-                    period_datetimes = {}
-
-                    for period_label, period_time in period_equity.items():
-                        specific_datetime = datetime.combine(latest_date, period_time)
-                        period_datetimes[period_label] = specific_datetime
-
-                    for period_label, specific_datetime in period_datetimes.items():    
+                    
+                    # ----- Current Session ---- #
+                    current_period_datetimes = {
+                        label: datetime.combine(latest_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }
+                    for period_label, specific_datetime in current_period_datetimes.items():    
                         if specific_datetime in data.index:
                             match period_label:
                                 case 'A':
@@ -356,6 +356,56 @@ class Initialization(Base):
                                     variables['ES_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
                         else:
                             pass
+                    # ---- Prior Session ---- #
+                    previous_date = latest_date - timedelta(days=1)
+                    prior_period_datetimes = {
+                        label: datetime.combine(previous_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }    
+                    for period_label, specific_datetime in prior_period_datetimes.items():
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['ES_PRIOR_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
+                                    variables['ES_PRIOR_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
+                                case 'B':
+                                    variables['ES_PRIOR_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
+                                    variables['ES_PRIOR_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
+                                case 'C':
+                                    variables['ES_PRIOR_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
+                                    variables['ES_PRIOR_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
+                                case 'D':
+                                    variables['ES_PRIOR_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
+                                    variables['ES_PRIOR_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
+                                case 'E':
+                                    variables['ES_PRIOR_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
+                                    variables['ES_PRIOR_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
+                                case 'F':
+                                    variables['ES_PRIOR_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
+                                    variables['ES_PRIOR_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
+                                case 'G':
+                                    variables['ES_PRIOR_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
+                                    variables['ES_PRIOR_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
+                                case 'H':
+                                    variables['ES_PRIOR_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
+                                    variables['ES_PRIOR_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
+                                case 'I':
+                                    variables['ES_PRIOR_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
+                                    variables['ES_PRIOR_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
+                                case 'J':
+                                    variables['ES_PRIOR_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
+                                    variables['ES_PRIOR_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
+                                case 'K':
+                                    variables['ES_PRIOR_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
+                                    variables['ES_PRIOR_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
+                                case 'L':
+                                    variables['ES_PRIOR_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
+                                    variables['ES_PRIOR_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
+                                case 'M':
+                                    variables['ES_PRIOR_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
+                                    variables['ES_PRIOR_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
+                        else:
+                            pass      
                 case "ES_2":
                     # ------------------- Use Integer Based Loc ----------------------- #
                     variables['ES_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
@@ -378,6 +428,67 @@ class Initialization(Base):
                     variables['ES_P_MCLOSE'] = float(data.iloc[0]['[ID8.SG4] P_MCLOSE'])
                     variables['ES_P_MVPOC'] = float(data.iloc[0]['[ID12.SG1] P_MVPOC'])
                     variables['ES_MVWAP'] = float(data.iloc[0]['[ID1.SG1] MVWAP'])
+                    # ----------------- Period-based ETH VWAP Extraction ----------------- #
+                    latest_date = data.index.max().date()
+                    
+                    for period_label, period_time in period_equity.items():
+                        specific_datetime = datetime.combine(latest_date, period_time)
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['ES_ETH_VWAP_A'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_A'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_A'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                    
+                                case 'B':
+                                    variables['ES_ETH_VWAP_B'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_B'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_B'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'C':
+                                    variables['ES_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'D':
+                                    variables['ES_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'E':
+                                    variables['ES_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_E'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'F':
+                                    variables['ES_ETH_VWAP_F'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_F'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_F'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'G':
+                                    variables['ES_ETH_VWAP_G'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_G'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_G'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'H':
+                                    variables['ES_ETH_VWAP_H'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_H'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_H'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'I':
+                                    variables['ES_ETH_VWAP_I'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_I'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_I'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'J':
+                                    variables['ES_ETH_VWAP_J'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_J'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_J'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'K':
+                                    variables['ES_ETH_VWAP_K'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_K'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_K'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'L':
+                                    variables['ES_ETH_VWAP_L'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_L'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_L'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'M':
+                                    variables['ES_ETH_VWAP_M'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_M'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_M'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                        else:
+                            pass
                 case "ES_3":
                     variables['ES_IB_ATR'] = float(data.iloc[1]['[ID2.SG1] IB ATR'])
                     variables['ES_IB_HIGH'] = float(data.iloc[0]['[ID1.SG2] IBH'])
@@ -414,11 +525,13 @@ class Initialization(Base):
                     variables['NQ_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
-                    period_datetimes = {}
-                    for period_label, period_time in period_equity.items():
-                        specific_datetime = datetime.combine(latest_date, period_time)
-                        period_datetimes[period_label] = specific_datetime
-                    for period_label, specific_datetime in period_datetimes.items():    
+                    
+                    # ----- Current Session ---- #
+                    current_period_datetimes = {
+                        label: datetime.combine(latest_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }
+                    for period_label, specific_datetime in current_period_datetimes.items():    
                         if specific_datetime in data.index:
                             match period_label:
                                 case 'A':
@@ -462,6 +575,56 @@ class Initialization(Base):
                                     variables['NQ_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
                         else:
                             pass
+                    # ---- Prior Session ---- #
+                    previous_date = latest_date - timedelta(days=1)
+                    prior_period_datetimes = {
+                        label: datetime.combine(previous_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }    
+                    for period_label, specific_datetime in prior_period_datetimes.items():
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['NQ_PRIOR_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
+                                    variables['NQ_PRIOR_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
+                                case 'B':
+                                    variables['NQ_PRIOR_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
+                                    variables['NQ_PRIOR_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
+                                case 'C':
+                                    variables['NQ_PRIOR_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
+                                    variables['NQ_PRIOR_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
+                                case 'D':
+                                    variables['NQ_PRIOR_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
+                                    variables['NQ_PRIOR_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
+                                case 'E':
+                                    variables['NQ_PRIOR_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
+                                    variables['NQ_PRIOR_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
+                                case 'F':
+                                    variables['NQ_PRIOR_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
+                                    variables['NQ_PRIOR_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
+                                case 'G':
+                                    variables['NQ_PRIOR_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
+                                    variables['NQ_PRIOR_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
+                                case 'H':
+                                    variables['NQ_PRIOR_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
+                                    variables['NQ_PRIOR_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
+                                case 'I':
+                                    variables['NQ_PRIOR_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
+                                    variables['NQ_PRIOR_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
+                                case 'J':
+                                    variables['NQ_PRIOR_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
+                                    variables['NQ_PRIOR_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
+                                case 'K':
+                                    variables['NQ_PRIOR_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
+                                    variables['NQ_PRIOR_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
+                                case 'L':
+                                    variables['NQ_PRIOR_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
+                                    variables['NQ_PRIOR_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
+                                case 'M':
+                                    variables['NQ_PRIOR_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
+                                    variables['NQ_PRIOR_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
+                        else:
+                            pass 
                 case "NQ_2":
                     variables['NQ_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
                     variables['NQ_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
@@ -483,6 +646,67 @@ class Initialization(Base):
                     variables['NQ_P_MCLOSE'] = float(data.iloc[0]['[ID8.SG4] P_MCLOSE'])
                     variables['NQ_P_MVPOC'] = float(data.iloc[0]['[ID12.SG1] P_MVPOC'])
                     variables['NQ_MVWAP'] = float(data.iloc[0]['[ID1.SG1] MVWAP'])
+                    # ----------------- Period-based ETH VWAP Extraction ----------------- #
+                    latest_date = data.index.max().date()
+                    
+                    for period_label, period_time in period_equity.items():
+                        specific_datetime = datetime.combine(latest_date, period_time)
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['NQ_ETH_VWAP_A'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_A'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_A'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                    
+                                case 'B':
+                                    variables['NQ_ETH_VWAP_B'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_B'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_B'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'C':
+                                    variables['NQ_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'D':
+                                    variables['NQ_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'E':
+                                    variables['NQ_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_E'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'F':
+                                    variables['NQ_ETH_VWAP_F'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_F'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_F'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'G':
+                                    variables['NQ_ETH_VWAP_G'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_G'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_G'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'H':
+                                    variables['NQ_ETH_VWAP_H'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_H'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_H'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'I':
+                                    variables['NQ_ETH_VWAP_I'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_I'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_I'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'J':
+                                    variables['NQ_ETH_VWAP_J'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_J'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_J'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'K':
+                                    variables['NQ_ETH_VWAP_K'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_K'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_K'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'L':
+                                    variables['NQ_ETH_VWAP_L'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_L'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_L'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'M':
+                                    variables['NQ_ETH_VWAP_M'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_M'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_M'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])   
+                        else:
+                            pass
                 case "NQ_3":
                     variables['NQ_IB_ATR'] = float(data.iloc[1]['[ID2.SG1] IB ATR'])
                     variables['NQ_IB_HIGH'] = float(data.iloc[0]['[ID1.SG2] IBH'])
@@ -519,13 +743,13 @@ class Initialization(Base):
                     variables['RTY_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
-                    period_datetimes = {}
-
-                    for period_label, period_time in period_equity.items():
-                        specific_datetime = datetime.combine(latest_date, period_time)
-                        period_datetimes[period_label] = specific_datetime
-
-                    for period_label, specific_datetime in period_datetimes.items():    
+                    
+                    # ----- Current Session ---- #
+                    current_period_datetimes = {
+                        label: datetime.combine(latest_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }
+                    for period_label, specific_datetime in current_period_datetimes.items():    
                         if specific_datetime in data.index:
                             match period_label:
                                 case 'A':
@@ -569,6 +793,56 @@ class Initialization(Base):
                                     variables['RTY_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
                         else:
                             pass
+                    # ---- Prior Session ---- #
+                    previous_date = latest_date - timedelta(days=1)
+                    prior_period_datetimes = {
+                        label: datetime.combine(previous_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }    
+                    for period_label, specific_datetime in prior_period_datetimes.items():
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['RTY_PRIOR_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
+                                    variables['RTY_PRIOR_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
+                                case 'B':
+                                    variables['RTY_PRIOR_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
+                                    variables['RTY_PRIOR_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
+                                case 'C':
+                                    variables['RTY_PRIOR_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
+                                    variables['RTY_PRIOR_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
+                                case 'D':
+                                    variables['RTY_PRIOR_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
+                                    variables['RTY_PRIOR_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
+                                case 'E':
+                                    variables['RTY_PRIOR_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
+                                    variables['RTY_PRIOR_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
+                                case 'F':
+                                    variables['RTY_PRIOR_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
+                                    variables['RTY_PRIOR_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
+                                case 'G':
+                                    variables['RTY_PRIOR_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
+                                    variables['RTY_PRIOR_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
+                                case 'H':
+                                    variables['RTY_PRIOR_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
+                                    variables['RTY_PRIOR_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
+                                case 'I':
+                                    variables['RTY_PRIOR_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
+                                    variables['RTY_PRIOR_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
+                                case 'J':
+                                    variables['RTY_PRIOR_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
+                                    variables['RTY_PRIOR_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
+                                case 'K':
+                                    variables['RTY_PRIOR_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
+                                    variables['RTY_PRIOR_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
+                                case 'L':
+                                    variables['RTY_PRIOR_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
+                                    variables['RTY_PRIOR_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
+                                case 'M':
+                                    variables['RTY_PRIOR_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
+                                    variables['RTY_PRIOR_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
+                        else:
+                            pass 
                 case "RTY_2":
                     variables['RTY_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
                     variables['RTY_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
@@ -590,6 +864,67 @@ class Initialization(Base):
                     variables['RTY_P_MCLOSE'] = float(data.iloc[0]['[ID8.SG4] P_MCLOSE'])
                     variables['RTY_P_MVPOC'] = float(data.iloc[0]['[ID12.SG1] P_MVPOC'])
                     variables['RTY_MVWAP'] = float(data.iloc[0]['[ID1.SG1] MVWAP'])
+                    # ----------------- Period-based ETH VWAP Extraction ----------------- #
+                    latest_date = data.index.max().date()
+                    
+                    for period_label, period_time in period_equity.items():
+                        specific_datetime = datetime.combine(latest_date, period_time)
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['RTY_ETH_VWAP_A'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_A'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_A'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                    
+                                case 'B':
+                                    variables['RTY_ETH_VWAP_B'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_B'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_B'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'C':
+                                    variables['RTY_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'D':
+                                    variables['RTY_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'E':
+                                    variables['RTY_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_E'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'F':
+                                    variables['RTY_ETH_VWAP_F'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_F'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_F'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'G':
+                                    variables['RTY_ETH_VWAP_G'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_G'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_G'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'H':
+                                    variables['RTY_ETH_VWAP_H'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_H'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_H'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'I':
+                                    variables['RTY_ETH_VWAP_I'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_I'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_I'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'J':
+                                    variables['RTY_ETH_VWAP_J'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_J'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_J'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'K':
+                                    variables['RTY_ETH_VWAP_K'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_K'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_K'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'L':
+                                    variables['RTY_ETH_VWAP_L'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_L'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_L'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'M':
+                                    variables['RTY_ETH_VWAP_M'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_M'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_M'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])   
+                        else:
+                            pass
                 case "RTY_3":
                     variables['RTY_IB_ATR'] = float(data.iloc[1]['[ID2.SG1] IB ATR'])
                     variables['RTY_IB_HIGH'] = float(data.iloc[0]['[ID1.SG2] IBH'])
@@ -626,13 +961,13 @@ class Initialization(Base):
                     variables['CL_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
-                    period_datetimes = {}
-
-                    for period_label, period_time in period_crude.items():
-                        specific_datetime = datetime.combine(latest_date, period_time)
-                        period_datetimes[period_label] = specific_datetime
-
-                    for period_label, specific_datetime in period_datetimes.items():    
+                    
+                    # ----- Current Session ---- #
+                    current_period_datetimes = {
+                        label: datetime.combine(latest_date, period_time)
+                        for label, period_time in period_equity.items()
+                    }
+                    for period_label, specific_datetime in current_period_datetimes.items():    
                         if specific_datetime in data.index:
                             match period_label:
                                 case 'A':
@@ -670,6 +1005,50 @@ class Initialization(Base):
                                     variables['CL_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
                         else:
                             pass
+                    # ---- Prior Session ---- #
+                    previous_date = latest_date - timedelta(days=1)
+                    prior_period_datetimes = {
+                        label: datetime.combine(previous_date, period_time)
+                        for label, period_time in period_crude.items()
+                    }    
+                    for period_label, specific_datetime in prior_period_datetimes.items():
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['CL_PRIOR_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
+                                    variables['CL_PRIOR_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
+                                case 'B':
+                                    variables['CL_PRIOR_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
+                                    variables['CL_PRIOR_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
+                                case 'C':
+                                    variables['CL_PRIOR_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
+                                    variables['CL_PRIOR_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
+                                case 'D':
+                                    variables['CL_PRIOR_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
+                                    variables['CL_PRIOR_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
+                                case 'E':
+                                    variables['CL_PRIOR_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
+                                    variables['CL_PRIOR_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
+                                case 'F':
+                                    variables['CL_PRIOR_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
+                                    variables['CL_PRIOR_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
+                                case 'G':
+                                    variables['CL_PRIOR_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
+                                    variables['CL_PRIOR_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
+                                case 'H':
+                                    variables['CL_PRIOR_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
+                                    variables['CL_PRIOR_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
+                                case 'I':
+                                    variables['CL_PRIOR_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
+                                    variables['CL_PRIOR_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
+                                case 'J':
+                                    variables['CL_PRIOR_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
+                                    variables['CL_PRIOR_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
+                                case 'K':
+                                    variables['CL_PRIOR_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
+                                    variables['CL_PRIOR_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
+                        else:
+                            pass 
                 case "CL_2":
                     variables['CL_ETH_VWAP'] = float(data.iloc[0]['[ID7.SG1] ETH_VWAP'])
                     variables['CL_ETH_TOP_1'] = float(data.iloc[0]['[ID7.SG2] Top_1'])
@@ -691,7 +1070,59 @@ class Initialization(Base):
                     variables['CL_P_MCLOSE'] = float(data.iloc[0]['[ID8.SG4] P_MCLOSE'])
                     variables['CL_P_MVPOC'] = float(data.iloc[0]['[ID12.SG1] P_MVPOC'])
                     variables['CL_MVWAP'] = float(data.iloc[0]['[ID1.SG1] MVWAP'])
-                
+                    # ----------------- Period-based ETH VWAP Extraction ----------------- #
+                    latest_date = data.index.max().date()
+                    
+                    for period_label, period_time in period_crude.items():
+                        specific_datetime = datetime.combine(latest_date, period_time)
+                        if specific_datetime in data.index:
+                            match period_label:
+                                case 'A':
+                                    variables['CL_ETH_VWAP_A'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_A'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_A'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                    
+                                case 'B':
+                                    variables['CL_ETH_VWAP_B'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_B'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_B'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'C':
+                                    variables['CL_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'D':
+                                    variables['CL_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'E':
+                                    variables['CL_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_E'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'F':
+                                    variables['CL_ETH_VWAP_F'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_F'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_F'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'G':
+                                    variables['CL_ETH_VWAP_G'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_G'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_G'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'H':
+                                    variables['CL_ETH_VWAP_H'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_H'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_H'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'I':
+                                    variables['CL_ETH_VWAP_I'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_I'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_I'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'J':
+                                    variables['CL_ETH_VWAP_J'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_J'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_J'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                case 'K':
+                                    variables['CL_ETH_VWAP_K'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_K'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_K'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                        else:
+                            pass
                 case "CL_3":
                     variables['CL_IB_ATR'] = float(data.iloc[1]['[ID2.SG1] IB ATR'])
                     variables['CL_IB_HIGH'] = float(data.iloc[0]['[ID1.SG2] IBH'])

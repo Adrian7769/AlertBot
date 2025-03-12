@@ -24,25 +24,15 @@ class TRCT(Base):
         self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)           
         self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
         self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.euro_ibh = round(self.variables.get(f'{self.product_name}_EURO_IBH'), 2)
-        self.euro_ibl = round(self.variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)
-        self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
         self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
-        self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
-        self.total_rth_delta = round(self.variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
         self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
         self.ib_high = round(self.variables.get(f'{product_name}_IB_HIGH'), 2)
         self.ib_low = round(self.variables.get(f'{product_name}_IB_LOW'), 2)
         self.prior_ibh = round(self.variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
-        self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)        
-        self.eth_top_2 = round(variables.get(f'{product_name}_ETH_TOP_2'), 2)
-        self.eth_top_1 = round(variables.get(f'{product_name}_ETH_TOP_1'), 2)
-        self.eth_bottom_1 = round(variables.get(f'{product_name}_ETH_BOTTOM_1'), 2)
-        self.eth_bottom_2 =  round(variables.get(f'{product_name}_ETH_BOTTOM_2'), 2)    
-        self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2)  
+        self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)          
+        self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2) 
+        self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')
+        self.fd_vpoc = round(variables.get(f'{product_name}_5D_VPOC'), 2)
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
@@ -125,38 +115,25 @@ class TRCT(Base):
     def trend_day(self):
         """
         For a 'trend day':
-        - For long: 1.) Day high must exceed IB_high + 0.5 * IB_range
-                    2.) Acceptance Outside of IB Range. Defined as 
-                    No New Period Lows Made Inside of IB Range. 
-                    Ex.) So If "D" Period Low is at 1800 and It is within the IB range, then The Following
-                    Period "E" Low cannot be below 1800 or that would make a New Low INSIDE The IB Range. We must check this criteria
-                    for all periods after A Period and up to the current Period. It is important to clarify that we only
-                    care about New Lows made INSIDE of IB range, not outside.
-                    3.) We must also check that Day_VPOC > Than IBH.
-                    4.) Prior Session Must Be A Rotational Day. So def prior_day must return a normal variation, normal day, neutral center, or non-trend.
-                    5.) self.cpl must be > than The current session MID ((day_high + day_low) / 2)
-                    6.) We cannot touch RTH or ETH VWAP after IB Extension. So this can perhaps be defined as: If Day High > IBH then 
-                    no period Low AFTER the period that extended IB can be less than or equal to ETH VWAP or RTH VWAP. 
-                    Ex.) if C period extended IBH to the upside, then D period and all the way to the current period cannot be less than or equal to RTH or ETH VWAP.
-                    7.) Value must be following price, this is defined as: RTH VPOC must be within the range of the current or past period. So if the range of 
-                    the current period is 1850 to 1750 and the range from the past period is from 1830 to 1720 the RTH VPOC must be greater than prior period low but less than 
-                    current period high. 
-        - For short: 1.) Day low must be below IB_low - 0.5 * IB_range
-                     2.) Acceptance Outside of IB Range. Defined as 
-                     No New Period Highs Made Inside of IB Range. 
-                     Ex.) So If "D" Period High is at 1800 and It is within the IB range, then The Following
-                     Period "E" High cannot be above 1800 or that would make a New High INSIDE The IB Range. We must check this criteria
-                     for all periods after A Period and up to the current Period. It is important to clarify that we only
-                     care about New Highs made INSIDE of IB range, not outside.
-                     3.) We must also check that Day_VPOC < Than IBL.
-                     4.) Prior Session Must Be A Rotational Day. So def prior_day must return a normal variation, normal day, neutral center, or non-trend.
-                     5.) self.cpl must be < than The current session MID ((day_high + day_low) / 2)
-                     6.) We cannot touch RTH or ETH VWAP after IB Extension. So this can perhaps be defined as: If Day Low < IBL then 
-                     no period High AFTER the period that extended IB can be Greater than or equal to ETH VWAP or RTH VWAP. 
-                     Ex.) if C period extended IBL to the downside, then D period (D is the Next period after C) and all the way to the current period cannot be greater than or equal to RTH or ETH VWAP.
-                     7.) Value must be following price, this is defined as: RTH VPOC must be within the range of the current or past period. So if the range of 
-                     the current period is 1850 to 1750 and the range from the past period is from 1870 to 1770 the RTH VPOC must be less than prior period high but greater than 
-                     current period low.
+        - For long:
+        1) Day high must exceed IB_high + 0.5 * IB_range
+        2) Acceptance Outside of IB Range: No New Period Lows Made Inside of IB Range.
+            Example: If "D" Period Low is at 1800 within IB range, then "E" Low cannot be below 1800
+            if it's still inside IB range.
+        3) Day_VPOC > IBH
+        4) Prior Session Must Be Rotational
+        5) self.cpl > current session MID
+        6) No period Low <= VWAP after IB extension
+        7) RTH VPOC must be within range of the last finished or current period.
+
+        - For short:
+        1) Day low < IB_low - 0.5 * IB_range
+        2) Acceptance Outside IB Range: No New Period Highs Made Inside IB Range.
+        3) Day_VPOC < IBL
+        4) Prior Session Must Be Rotational
+        5) self.cpl < current session MID
+        6) No period High >= VWAP after IB extension
+        7) RTH VPOC within the last/current period range.
         """
         ib_range = self.ib_high - self.ib_low
         if self.product_name == "CL":
@@ -174,66 +151,95 @@ class TRCT(Base):
                 'J': time(14, 0), 'K': time(14, 30), 'L': time(15, 0),
                 'M': time(15, 30),
             }
+
         now = datetime.now(ZoneInfo('America/New_York')).time()
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
+
+        logger.debug(f"trend_day | Product: {self.product_name} | Direction: {self.direction}")
+        logger.debug(f"trend_day | IB Range: {ib_range} (IBH={self.ib_high}, IBL={self.ib_low})")
+        logger.debug(f"trend_day | Finished Periods: {finished_periods}")
 
         # --- LONG DIRECTION ---
         if self.direction == "long":
             # 1) Day high must exceed IB_high + 0.5 * IB_range.
             condition1 = self.day_high > self.ib_high + 0.5 * ib_range
+            logger.debug(f"trend_day | (Long) Condition1: day_high({self.day_high}) > ib_high({self.ib_high}) + 0.5*ib_range => {condition1}")
 
-            # 2) Acceptance Outside IB Range: no new period LOW (inside IB range) that is lower than a previous period low.
+            # 2) Acceptance Outside IB Range: no new period LOW (inside IB range) lower than a previous period low.
             acceptance = True
             prior_low = None
             for period in finished_periods:
                 var_name = f"{self.product_name}_{period}_LOW"
                 period_low = self.variables.get(var_name)
                 if period_low is None:
+                    logger.debug(f"trend_day | (Long) Acceptance: No LOW data for period {period}. Skipping.")
                     continue
                 period_low = round(period_low, 2)
+
                 if prior_low is not None:
-                    # If a new period's low is lower than the last accepted low and is inside IB range, acceptance fails.
+                    # If we made a new lower low inside IB => fail
                     if period_low < prior_low and self.ib_low <= period_low <= self.ib_high:
+                        logger.debug(f"trend_day | (Long) Acceptance Failed: period {period} low({period_low}) < prior_low({prior_low}) inside IB.")
                         acceptance = False
                         break
-                # Only update prior_low if the period low is inside IB range.
+
                 if self.ib_low <= period_low <= self.ib_high:
+                    logger.debug(f"trend_day | (Long) Acceptance: Updating prior_low => {period_low}")
                     prior_low = period_low
 
             # 3) Day_VPOC must be greater than IB_high.
             condition3 = self.p_vpoc > self.ib_high
+            logger.debug(f"trend_day | (Long) Condition3: p_vpoc({self.p_vpoc}) > ib_high({self.ib_high}) => {condition3}")
 
             # 4) Prior session must be rotational.
-            condition4 = self.prior_day() in ["Rotational"]
+            prior_day_type = self.prior_day()
+            condition4 = prior_day_type in ["Rotational"]
+            logger.debug(f"trend_day | (Long) Condition4: prior_day({prior_day_type}) == 'Rotational' => {condition4}")
 
             # 5) self.cpl must be greater than current session MID.
             current_mid = (self.day_high + self.day_low) / 2
             condition5 = self.cpl > current_mid
+            logger.debug(f"trend_day | (Long) Condition5: cpl({self.cpl}) > current_mid({round(current_mid, 2)}) => {condition5}")
 
-            # 6) After IB extension (first period where HIGH > IB_high), no subsequent period low can be <= ETH VWAP.
+            # 6) After IB extension, no subsequent period low can be <= its period ETH VWAP.
             extension_found = False
             condition6 = True
+            ib_extension_period = None
             for period in finished_periods:
                 var_name_high = f"{self.product_name}_{period}_HIGH"
                 period_high = self.variables.get(var_name_high)
                 if period_high is None:
+                    logger.debug(f"trend_day | (Long) Condition6: No HIGH data for period {period}. Skipping.")
                     continue
                 period_high = round(period_high, 2)
                 if not extension_found and period_high > self.ib_high:
                     extension_found = True
-                    continue  # Only consider periods after extension.
+                    ib_extension_period = period
+                    logger.debug(f"trend_day | (Long) Condition6: Found IB extension at period {period} with high({period_high}).")
+                    continue  # Start checking from the next period.
+
                 if extension_found:
                     var_name_low = f"{self.product_name}_{period}_LOW"
                     period_low = self.variables.get(var_name_low)
                     if period_low is None:
+                        logger.debug(f"trend_day | (Long) Condition6: No LOW data for period {period}. Skipping.")
                         continue
                     period_low = round(period_low, 2)
-                    # If any subsequent period low is <= ETH VWAP (or RTH VWAP if defined similarly), condition fails.
-                    if period_low <= self.eth_vwap:
+
+                    vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
+                    period_vwap = self.variables.get(vwap_var)
+                    if period_vwap is None:
+                        logger.debug(f"trend_day | (Long) Condition6: No VWAP data for period {period}. Skipping.")
+                        continue
+                    period_vwap = round(period_vwap, 2)
+
+                    if period_low <= period_vwap:
+                        logger.debug(f"trend_day | (Long) Condition6 Failed: period {period} low({period_low}) <= vwap({period_vwap}).")
                         condition6 = False
                         break
-            # 7) Value must be following price: RTH VPOC must be within the range of the last finished period or the current period.
+
+            # 7) RTH VPOC must be within the range of the last finished or current period.
             if len(finished_periods) >= 2:
                 prior_period = finished_periods[-2]
                 current_period = finished_periods[-1]
@@ -243,61 +249,102 @@ class TRCT(Base):
                     prior_low = round(prior_low, 2)
                     current_high = round(current_high, 2)
                     condition7 = (prior_low < self.day_vpoc < current_high)
+                    logger.debug(f"trend_day | (Long) Condition7: prior_low({prior_low}) < day_vpoc({self.day_vpoc}) < current_high({current_high}) => {condition7}")
                 else:
                     condition7 = False
+                    logger.debug(f"trend_day | (Long) Condition7: Not enough data for last/current period to check VPOC range => False")
             else:
                 condition7 = False
-                
+                logger.debug(f"trend_day | (Long) Condition7: Not enough finished periods => False")
+
+            logger.debug(f"trend_day | (Long) Final Conditions => c1({condition1}), acceptance({acceptance}), c3({condition3}), c4({condition4}), c5({condition5}), c6({condition6}), c7({condition7})")
+            
+            # Define for Check Method
+            self.ib_acceptance_l = acceptance
+                      
             return (condition1 and acceptance and condition3 and condition4 and condition5 and condition6 and condition7)
 
         # --- SHORT DIRECTION ---
         elif self.direction == "short":
             # 1) Day low must be below IB_low - 0.5 * IB_range.
             condition1 = self.day_low < self.ib_low - 0.5 * ib_range
-            # 2) Acceptance Outside IB Range: no new period HIGH (inside IB range) that is higher than a previous period high.
+            logger.debug(f"trend_day | (Short) Condition1: day_low({self.day_low}) < ib_low({self.ib_low}) - 0.5*ib_range => {condition1}")
+
+            # 2) Acceptance Outside IB Range: no new period HIGH (inside IB range) higher than a previous period high.
             acceptance = True
             prior_high = None
             for period in finished_periods:
                 var_name = f"{self.product_name}_{period}_HIGH"
                 period_high = self.variables.get(var_name)
                 if period_high is None:
+                    logger.debug(f"trend_day | (Short) Acceptance: No HIGH data for period {period}. Skipping.")
                     continue
                 period_high = round(period_high, 2)
+
                 if prior_high is not None:
+                    # If we made a new higher high inside IB => fail
                     if period_high > prior_high and self.ib_low <= period_high <= self.ib_high:
+                        logger.debug(f"trend_day | (Short) Acceptance Failed: period {period} high({period_high}) > prior_high({prior_high}) inside IB.")
                         acceptance = False
                         break
+
                 if self.ib_low <= period_high <= self.ib_high:
+                    logger.debug(f"trend_day | (Short) Acceptance: Updating prior_high => {period_high}")
                     prior_high = period_high
+
             # 3) Day_VPOC must be less than IB_low.
-            condition3 = self.p_vpoc < self.ib_low
+            condition3 = self.day_vpoc < self.ib_low
+            logger.debug(f"trend_day | (Short) Condition3: p_vpoc({self.p_vpoc}) < ib_low({self.ib_low}) => {condition3}")
+
             # 4) Prior session must be rotational.
-            condition4 = self.prior_day() in ["Rotational"]
+            prior_day_type = self.prior_day()
+            condition4 = prior_day_type in ["Rotational"]
+            logger.debug(f"trend_day | (Short) Condition4: prior_day({prior_day_type}) == 'Rotational' => {condition4}")
+
             # 5) self.cpl must be less than current session MID.
             current_mid = (self.day_high + self.day_low) / 2
             condition5 = self.cpl < current_mid
-            # 6) After IB extension (first period where LOW < IB_low), no subsequent period high can be >= ETH VWAP.
+            logger.debug(f"trend_day | (Short) Condition5: cpl({self.cpl}) < current_mid({round(current_mid, 2)}) => {condition5}")
+
+            # 6) After IB extension, no subsequent period high can be >= its period ETH VWAP.
             extension_found = False
             condition6 = True
+            ib_extension_period = None
             for period in finished_periods:
                 var_name_low = f"{self.product_name}_{period}_LOW"
                 period_low = self.variables.get(var_name_low)
                 if period_low is None:
+                    logger.debug(f"trend_day | (Short) Condition6: No LOW data for period {period}. Skipping.")
                     continue
                 period_low = round(period_low, 2)
+
                 if not extension_found and period_low < self.ib_low:
                     extension_found = True
-                    continue
+                    ib_extension_period = period
+                    logger.debug(f"trend_day | (Short) Condition6: Found IB extension at period {period} with low({period_low}).")
+                    continue  # Begin checking from next period.
+
                 if extension_found:
                     var_name_high = f"{self.product_name}_{period}_HIGH"
                     period_high = self.variables.get(var_name_high)
                     if period_high is None:
+                        logger.debug(f"trend_day | (Short) Condition6: No HIGH data for period {period}. Skipping.")
                         continue
                     period_high = round(period_high, 2)
-                    if period_high >= self.eth_vwap:
+
+                    vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
+                    period_vwap = self.variables.get(vwap_var)
+                    if period_vwap is None:
+                        logger.debug(f"trend_day | (Short) Condition6: No VWAP data for period {period}. Skipping.")
+                        continue
+                    period_vwap = round(period_vwap, 2)
+
+                    if period_high >= period_vwap:
+                        logger.debug(f"trend_day | (Short) Condition6 Failed: period {period} high({period_high}) >= vwap({period_vwap}).")
                         condition6 = False
                         break
-            # 7) Value must be following price: RTH VPOC must be within the range of the last finished period or current period.
+
+            # 7) RTH VPOC must be within the range of the last finished or current period.
             if len(finished_periods) >= 2:
                 prior_period = finished_periods[-2]
                 current_period = finished_periods[-1]
@@ -307,27 +354,61 @@ class TRCT(Base):
                     prior_high = round(prior_high, 2)
                     current_low = round(current_low, 2)
                     condition7 = (current_low < self.day_vpoc < prior_high)
+                    logger.debug(f"trend_day | (Short) Condition7: current_low({current_low}) < day_vpoc({self.day_vpoc}) < prior_high({prior_high}) => {condition7}")
                 else:
                     condition7 = False
+                    logger.debug(f"trend_day | (Short) Condition7: Not enough data for last/current period => False")
             else:
                 condition7 = False
+                logger.debug(f"trend_day | (Short) Condition7: Not enough finished periods => False")
+
+            logger.debug(f"trend_day | (Short) Final Conditions => c1({condition1}), acceptance({acceptance}), c3({condition3}), c4({condition4}), c5({condition5}), c6({condition6}), c7({condition7})")
+            
+            # Make Accessible to Check Method.
+            self.ib_acceptance_s = acceptance
+            self.value_following_price = condition7
+            
             return (condition1 and acceptance and condition3 and condition4 and condition5 and condition6 and condition7)
+
         else:
+            logger.debug(f"trend_day | No valid direction detected (direction={self.direction}). Returning False.")
             return False
+
     def float_range(start, stop, step):
+        """
+        Yields a sequence of floating-point numbers from `start` up to `stop`
+        (inclusive), stepping by `step`. 
+        """
         epsilon = 1e-9
         num_steps = int(math.floor((stop - start) / step + 0.5))
+        logger.debug(f"float_range | start={start}, stop={stop}, step={step}, num_steps={num_steps}")
         for i in range(num_steps + 1):
             val = start + i * step
             if val > stop + epsilon:
                 break
-            yield round(val, 10)
+            yield_val = round(val, 10)
+            logger.debug(f"float_range | yield: {yield_val}")
+            yield yield_val
+
     def single_prints(self, finished_periods):
+        """
+        Returns True if there's at least one single print *within the overlapped region*
+        of the session and inside a 'middle' sub-period (not the first or last).
+
+        A single print is defined as a price that appears in exactly one 'middle'
+        sub-period's range, strictly within the 'lowest_overlapped_price' and
+        'highest_overlapped_price' boundaries.
+        """
+        logger.debug(f"single_prints | Product: {self.product_name} | Finished Periods: {finished_periods}")
         if len(finished_periods) < 3:
+            logger.debug("single_prints | Not enough periods (need >= 3). Returning False.")
             return False
+
         first_subperiod = finished_periods[0]
         last_subperiod = finished_periods[-1]
         middle_periods = finished_periods[1:-1]
+        logger.debug(f"single_prints | Middle Sub-Periods: {middle_periods}")
+
         tick_size_map = {
             "ES": 0.25,
             "NQ": 0.25,
@@ -335,93 +416,99 @@ class TRCT(Base):
             "CL": 0.01
         }
         tick_size = tick_size_map.get(self.product_name, 1.0)
+        logger.debug(f"single_prints | Using tick_size={tick_size} for product={self.product_name}")
+
         price_map = defaultdict(set)
         min_price = float('inf')
         max_price = float('-inf')
+
+        # 1) Gather overall min/max and build price->subperiods map
         for period in finished_periods:
             p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
             p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
             if p_low is None or p_high is None:
+                logger.debug(f"single_prints | Period {period} missing data (LOW or HIGH). Skipping.")
                 continue
             low_val = float(p_low)
             high_val = float(p_high)
+
             if low_val < min_price:
                 min_price = low_val
             if high_val > max_price:
                 max_price = high_val
+
             for price in self.float_range(low_val, high_val, tick_size):
                 price_map[price].add(period)
+
         if min_price == float('inf') or max_price == float('-inf'):
+            logger.debug("single_prints | No valid min/max price found. Returning False.")
             return False
+
+        logger.debug(f"single_prints | Overall min_price={min_price}, max_price={max_price}")
+
+        # 2) Find the lowest_overlapped_price
         lowest_overlapped_price = None
         for price in self.float_range(min_price, max_price, tick_size):
             if len(price_map[price]) >= 2:
                 lowest_overlapped_price = price
+                logger.debug(f"single_prints | Found lowest_overlapped_price={lowest_overlapped_price}")
                 break
+
+        # 3) Find the highest_overlapped_price
         highest_overlapped_price = None
         reversed_prices = list(self.float_range(min_price, max_price, tick_size))
         reversed_prices.reverse()
         for price in reversed_prices:
             if len(price_map[price]) >= 2:
                 highest_overlapped_price = price
+                logger.debug(f"single_prints | Found highest_overlapped_price={highest_overlapped_price}")
                 break
+
+        # 4) If no overlapped region
         if (lowest_overlapped_price is None or
             highest_overlapped_price is None or
             lowest_overlapped_price >= highest_overlapped_price):
+            logger.debug("single_prints | No valid overlapped region. Returning False.")
             return False
+
+        logger.debug(f"single_prints | Overlapped region: {lowest_overlapped_price} -> {highest_overlapped_price}")
+
+        # 5) Check for a price that belongs to exactly one middle sub-period
         for price in self.float_range(lowest_overlapped_price, highest_overlapped_price, tick_size):
             if len(price_map[price]) == 1:
+                # Extract the single sub-period
                 (unique_period,) = price_map[price]
                 if unique_period in middle_periods:
+                    logger.debug(f"single_prints | Found single print price={price} in sub-period={unique_period}. Returning True.")
                     return True
+
+        logger.debug("single_prints | No single prints found. Returning False.")
         return False
+
     def strong_trending(self):
         """
         For a 'strong trending':
-        - For long: 1.) Acceptance inside "Trending Channel". Defined as no new period lows created while below self.eth_top_1. 
-                        We only consider the period lows AFTER IBH EXTENSION. IBH extension is defined as the first period high that is greater than IB_High.
-                        A "new period low" is defined by a period low being lower than the previous periods low. So if C Period has a low at 1850 and D period has a
-                        low at 1830 AND 1850 lies below self.eth_top_1 then the condition would return false, because we made a NEW low outside of the trending channel.
-                        Please note that we can make lows as long as they are within the trending channel!
-                    EX.) Lets say that C Period is the first period to "Extend" The Initial Balance High. 
-                         Then We only consider Periods After C period, for the Trending Channel Criteria.
-                    2.) Prior Session Must Be A Rotational Day. So def prior_day must return "Rotational", anything else and the condition must return false.
-                    3.) We cannot touch RTH or ETH VWAP after IB Extension. So this can perhaps be defined as: If Day High > IBH then 
-                    no period Low AFTER the period that extended IB can be less than or equal to ETH VWAP or RTH VWAP.
-                    Ex.) if C period extended IBH to the upside, then D period and all the way to the current period cannot be less than or equal to RTH or ETH VWAP.
-                    4.) self.cpl must be > than The current session MID ((day_high + day_low) / 2)
-                    5.) The Auction must be "One-time-Framing" for at least the prior 3 periods AFTER the period that extends the Initial Balance High.
-                    One-Time-Framing is a pattern of Consecutive Higher Highs and consecutive Higher Lows for each period.
-                    Ex.) If C period is the period that happens to extend the initial balance high (C period high > IBH) then if D period High is > than C period High
-                    and D Period Low is > than C period Low than that we would be one time framing for 1 period, every time that pattern continues with each
-                    period then we would add 1. If the pattern is violated, then we go back to 0 and restart. This condition must only be true if we have "One Time Framed"
-                    for at least 3 or more periods SINCE the IB Extension Period. So if D period High was the First Period High to be > than IBH then we start Counting from D Period.
-                    6.) Single Prints Must Be Present In the Current Trading Session. Single prints are defined prices that only get traded by one period. So if 
-                    you were to take the period ranges and represent them as blocks, the single prints in the "profile" would only have 1 block and thus be a single print. But we do not look at the
-                    periods on the edges, they are not considered single prints.
-        - For short: 1.) Acceptance inside "Trending Channel". Defined as no new period highs created while above self.eth_bottom_1. 
-                        We only consider the period Highs AFTER IBL EXTENSION. IBL extension is defined as the first period Low that is less than IB_Low.
-                        A "new period High" is defined by a period High being Higher than the previous periods High. So if C Period has a High at 1850 and D period has a
-                        High at 1860 AND 1850 lies above self.eth_bottom_1 then the condition would return false, because we made a NEW High outside of the trending channel.
-                        Please note that we can make highs as long as they are within the trending channel!
-                    EX.) Lets say that C Period is the first period to "Extend" The Initial Balance Low. 
-                         Then We only consider Periods After C period, for the Trending Channel Criteria.
-                    2.) Prior Session Must Be A Rotational Day. So def prior_day must return "Rotational", anything else and the condition must return false.
-                    3.) We cannot touch RTH or ETH VWAP after IB Extension. So this can perhaps be defined as: If Day Low < IBL then 
-                    no period High AFTER the period that extended IB can be greater than or equal to ETH VWAP or RTH VWAP.
-                    Ex.) if C period extended IBL to the downside, then D period and all the way to the current period cannot be less than or equal to RTH or ETH VWAP.
-                    4.) self.cpl must be > than The current session MID ((day_high + day_low) / 2)
-                    5.) The Auction must be "One-time-Framing" for at least the prior 3 periods AFTER the period that extends the Initial Balance High.
-                    One-Time-Framing is a pattern of Consecutive Higher Highs and consecutive Higher Lows for each period.
-                    Ex.) If C period is the period that happens to extend the initial balance high (C period high > IBH) then if D period High is > than C period High
-                    and D Period Low is > than C period Low than that we would be one time framing for 1 period, every time that pattern continues with each
-                    period then we would add 1. If the pattern is violated, then we go back to 0 and restart. This condition must only be true if we have "One Time Framed"
-                    for at least 3 or more periods SINCE the IB Extension Period. So if D period High was the First Period High to be > than IBH then we start Counting from D Period.
-                    6.) Single Prints Must Be Present In the Current Trading Session. Single prints are defined prices that only get traded by one period. So if 
-                    you were to take the period ranges and represent them as blocks, the single prints in the "profile" would only have 1 block and thus be a single print. But we do not look at the
-                    periods on the edges, they are not considered single prints.        
+        -- LONG direction:
+            1) After IBH extension, no new period lows below the previous period low
+                if that previous low is itself below `eth_top_1_{previous_period}`.
+            2) Prior session must be 'Rotational'.
+            3) After IBH extension, no sub-period's low can be <= that sub-period's ETH VWAP.
+            4) cpl > session MID.
+            5) One-time framing >= 3 consecutive sub-periods with higher highs & higher lows
+                after the extension sub-period.
+            6) Single prints must be present.
+
+        -- SHORT direction:
+            1) After IBL extension, no new period highs above the previous period high
+                if that previous high is itself above `eth_bottom_1_{previous_period}`.
+            2) Prior session must be 'Rotational'.
+            3) After IBL extension, no sub-period's high can be >= that sub-period's ETH VWAP.
+            4) cpl < session MID.
+            5) One-time framing >= 3 consecutive sub-periods with lower highs & lower lows
+                after the extension sub-period.
+            6) Single prints must be present.
         """
-        # Define period schedule based on product type.
+        logger.debug(f"strong_trending | Product: {self.product_name}, Direction: {self.direction}")
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -437,155 +524,259 @@ class TRCT(Base):
                 'J': time(14, 0), 'K': time(14, 30), 'L': time(15, 0),
                 'M': time(15, 30),
             }
+
         now = datetime.now(ZoneInfo('America/New_York')).time()
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
+        logger.debug(f"strong_trending | Finished Periods: {finished_periods}")
 
-        # --- Identify IBH Extension ---
-        ext_found = False
-        ext_index = None
-        for i, period in enumerate(finished_periods):
-            high_var = f"{self.product_name}_{period}_HIGH"
-            period_high = self.variables.get(high_var)
-            if period_high is None:
-                continue
-            period_high = round(period_high, 2)
-            if period_high > self.ib_high:
-                ext_found = True
-                ext_index = i
-                break
-
-        if not ext_found:
-            # If no extension has occurred, strong trending cannot be confirmed.
+        if not finished_periods:
+            logger.debug("strong_trending | No finished periods. Returning False.")
             return False
 
-        # --- Condition 1: Trending Channel Acceptance ---
-        trending_acceptance = True
-        prior_low = None
-        # Iterate through periods after IB extension.
-        for i in range(ext_index, len(finished_periods)):
-            period = finished_periods[i]
-            low_var = f"{self.product_name}_{period}_LOW"
-            period_low = self.variables.get(low_var)
-            if period_low is None:
-                continue
-            period_low = round(period_low, 2)
-            if i == ext_index:
-                prior_low = period_low
-                continue
-            # If new period low is lower than the previous period low and the previous low is below self.eth_top_1,
-            # then a new low has been created outside of the trending channel.
-            if prior_low is not None and period_low < prior_low and prior_low < self.eth_top_1:
-                trending_acceptance = False
-                break
-            # Update prior_low if the current low is within the trending channel.
-            if self.ib_low <= period_low <= self.eth_top_1:
-                prior_low = period_low
-
-        # --- Condition 2: Prior Session Must Be Rotational ---
-        rotational_set = {"Normal Var ^", "Normal Day ^", "Neutral Center", "Non-Trend"}
-        condition2 = self.prior_day() in rotational_set
-
-        # --- Condition 3: No VWAP Touch After Extension ---
-        condition3 = True
-        for i in range(ext_index + 1, len(finished_periods)):
-            period = finished_periods[i]
-            low_var = f"{self.product_name}_{period}_LOW"
-            period_low = self.variables.get(low_var)
-            if period_low is None:
-                continue
-            period_low = round(period_low, 2)
-            if period_low <= self.eth_vwap:
-                condition3 = False
-                break
-
-        # --- Condition 4: Current Price Above Session Mid ---
-        current_mid = (self.day_high + self.day_low) / 2
-        condition4 = self.cpl > current_mid
-
-        # --- Condition 5: One-Time Framing Count >= 3 ---
-        one_time_count = 0
-        if ext_index < len(finished_periods) - 1:
-            prev_period = finished_periods[ext_index]
-            prev_high = self.variables.get(f"{self.product_name}_{prev_period}_HIGH")
-            prev_low = self.variables.get(f"{self.product_name}_{prev_period}_LOW")
-            if prev_high is not None:
-                prev_high = round(prev_high, 2)
-            if prev_low is not None:
-                prev_low = round(prev_low, 2)
-            for period in finished_periods[ext_index + 1:]:
-                current_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                current_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                if current_high is None or current_low is None:
+        # Decide direction
+        if self.direction == "long":
+            logger.debug("strong_trending | Checking LONG strong trending criteria...")
+            # 1) Find IBH extension
+            ext_found = False
+            ext_index = None
+            for i, period in enumerate(finished_periods):
+                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
+                if p_high is None:
+                    logger.debug(f"strong_trending | Period {period} missing HIGH. Skipping.")
                     continue
-                current_high = round(current_high, 2)
-                current_low = round(current_low, 2)
-                if prev_high is None or prev_low is None:
+                if round(p_high, 2) > self.ib_high:
+                    ext_found = True
+                    ext_index = i
+                    logger.debug(f"strong_trending | Found IBH extension at period {period}, index={i}, p_high={p_high}.")
+                    break
+            if not ext_found:
+                logger.debug("strong_trending | No IBH extension found. Returning False.")
+                return False
+
+            # Trending channel acceptance
+            trending_acceptance = True
+            outside_low = None
+            for i in range(ext_index, len(finished_periods)):
+                period = finished_periods[i]
+                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
+                p_top1 = self.variables.get(f"{self.product_name}_ETH_TOP_1_{period}")
+                if p_low is None or p_top1 is None:
+                    logger.debug(f"strong_trending | Missing data (LOW or TOP_1) for period {period}. Skipping.")
                     continue
-                if current_high > prev_high and current_low > prev_low:
-                    one_time_count += 1
-                    prev_high = current_high
-                    prev_low = current_low
-                else:
-                    one_time_count = 0  # reset if pattern breaks
-            condition5 = one_time_count >= 3
+                p_low = round(p_low, 2)
+                p_top1 = round(p_top1, 2)
+
+                if p_low < p_top1:
+                    logger.debug(f"strong_trending | Period {period} outside channel. low({p_low}) < top1({p_top1}).")
+                    if outside_low is None:
+                        outside_low = p_low
+                        logger.debug(f"strong_trending | Setting outside_low={outside_low}.")
+                    else:
+                        if p_low < outside_low:
+                            logger.debug(f"strong_trending | New lower outside low={p_low} < old outside_low={outside_low}. Failing.")
+                            trending_acceptance = False
+                            break
+
+            # 2) Prior session must be 'Rotational'
+            prior_session_type = self.prior_day()
+            condition2 = (prior_session_type == "Rotational")
+            logger.debug(f"strong_trending | Condition2: prior_day={prior_session_type} => {condition2}")
+
+            # 3) No VWAP Touch after IBH extension
+            condition3 = True
+            for i in range(ext_index + 1, len(finished_periods)):
+                period = finished_periods[i]
+                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
+                if p_low is None:
+                    logger.debug(f"strong_trending | Period {period} missing LOW. Skipping.")
+                    continue
+                p_low = round(p_low, 2)
+
+                vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
+                period_vwap = self.variables.get(vwap_var)
+                if period_vwap is None:
+                    logger.debug(f"strong_trending | Period {period} missing VWAP. Skipping.")
+                    continue
+                period_vwap = round(period_vwap, 2)
+
+                if p_low <= period_vwap:
+                    logger.debug(f"strong_trending | Period {period} low({p_low}) <= vwap({period_vwap}). Failing condition3.")
+                    condition3 = False
+                    break
+
+            # 4) cpl > session MID
+            session_mid = (self.day_high + self.day_low) / 2
+            condition4 = (self.cpl > session_mid)
+            logger.debug(f"strong_trending | Condition4: cpl({self.cpl}) > session_mid({session_mid}) => {condition4}")
+
+            # 5) One-time framing >= 3
+            one_time_count = 0
+            if ext_index < len(finished_periods) - 1:
+                prev_period = finished_periods[ext_index]
+                prev_high = self.variables.get(f"{self.product_name}_{prev_period}_HIGH")
+                prev_low = self.variables.get(f"{self.product_name}_{prev_period}_LOW")
+                if prev_high is not None and prev_low is not None:
+                    prev_high = round(prev_high, 2)
+                    prev_low = round(prev_low, 2)
+                    for period in finished_periods[ext_index + 1:]:
+                        cur_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
+                        cur_low = self.variables.get(f"{self.product_name}_{period}_LOW")
+                        if cur_high is None or cur_low is None:
+                            logger.debug(f"strong_trending | Missing data in period {period}. Skipping OTF check.")
+                            continue
+                        cur_high = round(cur_high, 2)
+                        cur_low = round(cur_low, 2)
+
+                        if cur_high > prev_high and cur_low > prev_low:
+                            one_time_count += 1
+                            prev_high = cur_high
+                            prev_low = cur_low
+                            logger.debug(f"strong_trending | OTF +1 => {one_time_count} (period {period}).")
+                        else:
+                            one_time_count = 0
+                            logger.debug(f"strong_trending | OTF reset to 0 (period {period}).")
+            condition5 = (one_time_count >= 3)
+            logger.debug(f"strong_trending | Condition5: one_time_count({one_time_count}) >= 3 => {condition5}")
+
+            # 6) Single prints
+            condition6 = self.single_prints(finished_periods)
+            logger.debug(f"strong_trending | Condition6: single_prints => {condition6}")
+
+            logger.debug(f"strong_trending | (Long) Final => acceptance({trending_acceptance}), c2({condition2}), c3({condition3}), c4({condition4}), c5({condition5}), c6({condition6})")
+            
+            # Make Accessible to Check Method.
+            self.trending_acceptance_l = trending_acceptance
+            self.session_mid_l = condition4
+            self.one_time_framing_l = condition5
+            
+            return (trending_acceptance and condition2 and condition3 and condition4 and condition5 and condition6)
+
+        elif self.direction == "short":
+            logger.debug("strong_trending | Checking SHORT strong trending criteria...")
+            # 1) Find IBL extension
+            ext_found = False
+            ext_index = None
+            for i, period in enumerate(finished_periods):
+                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
+                if p_low is None:
+                    logger.debug(f"strong_trending | Period {period} missing LOW. Skipping.")
+                    continue
+                if round(p_low, 2) < self.ib_low:
+                    ext_found = True
+                    ext_index = i
+                    logger.debug(f"strong_trending | Found IBL extension at period {period}, index={i}, p_low={p_low}.")
+                    break
+            if not ext_found:
+                logger.debug("strong_trending | No IBL extension found. Returning False.")
+                return False
+
+            trending_acceptance = True
+            outside_high = None
+            for i in range(ext_index, len(finished_periods)):
+                period = finished_periods[i]
+                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
+                p_bottom1 = self.variables.get(f"{self.product_name}_ETH_BOTTOM_1_{period}")
+                if p_high is None or p_bottom1 is None:
+                    logger.debug(f"strong_trending | Missing data (HIGH or BOTTOM_1) for period {period}. Skipping.")
+                    continue
+                p_high = round(p_high, 2)
+                p_bottom1 = round(p_bottom1, 2)
+
+                if p_high > p_bottom1:
+                    logger.debug(f"strong_trending | Period {period} outside channel. high({p_high}) > bottom1({p_bottom1}).")
+                    if outside_high is None:
+                        outside_high = p_high
+                        logger.debug(f"strong_trending | Setting outside_high={outside_high}.")
+                    else:
+                        if p_high > outside_high:
+                            logger.debug(f"strong_trending | New higher outside high={p_high} > old outside_high={outside_high}. Failing.")
+                            trending_acceptance = False
+                            break
+
+            # 2) Prior session must be 'Rotational'
+            prior_session_type = self.prior_day()
+            condition2 = (prior_session_type == "Rotational")
+            logger.debug(f"strong_trending | Condition2: prior_day={prior_session_type} => {condition2}")
+
+            # 3) No VWAP Touch after IBL extension
+            condition3 = True
+            for i in range(ext_index + 1, len(finished_periods)):
+                period = finished_periods[i]
+                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
+                if p_high is None:
+                    logger.debug(f"strong_trending | Period {period} missing HIGH. Skipping.")
+                    continue
+                p_high = round(p_high, 2)
+
+                vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
+                period_vwap = self.variables.get(vwap_var)
+                if period_vwap is None:
+                    logger.debug(f"strong_trending | Period {period} missing VWAP. Skipping.")
+                    continue
+                period_vwap = round(period_vwap, 2)
+
+                if p_high >= period_vwap:
+                    logger.debug(f"strong_trending | Period {period} high({p_high}) >= vwap({period_vwap}). Failing condition3.")
+                    condition3 = False
+                    break
+
+            # 4) cpl < session mid
+            session_mid = (self.day_high + self.day_low) / 2
+            condition4 = (self.cpl < session_mid)
+            logger.debug(f"strong_trending | Condition4: cpl({self.cpl}) < session_mid({session_mid}) => {condition4}")
+
+            # 5) One-Time Framing >= 3
+            one_time_count = 0
+            if ext_index < len(finished_periods) - 1:
+                prev_period = finished_periods[ext_index]
+                prev_high = self.variables.get(f"{self.product_name}_{prev_period}_HIGH")
+                prev_low = self.variables.get(f"{self.product_name}_{prev_period}_LOW")
+                if prev_high is not None and prev_low is not None:
+                    prev_high = round(prev_high, 2)
+                    prev_low = round(prev_low, 2)
+                    for period in finished_periods[ext_index + 1:]:
+                        cur_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
+                        cur_low = self.variables.get(f"{self.product_name}_{period}_LOW")
+                        if cur_high is None or cur_low is None:
+                            logger.debug(f"strong_trending | Missing data in period {period}. Skipping OTF check.")
+                            continue
+                        cur_high = round(cur_high, 2)
+                        cur_low = round(cur_low, 2)
+
+                        if cur_high < prev_high and cur_low < prev_low:
+                            one_time_count += 1
+                            prev_high = cur_high
+                            prev_low = cur_low
+                            logger.debug(f"strong_trending | OTF +1 => {one_time_count} (period {period}).")
+                        else:
+                            one_time_count = 0
+                            logger.debug(f"strong_trending | OTF reset to 0 (period {period}).")
+            condition5 = (one_time_count >= 3)
+            logger.debug(f"strong_trending | Condition5: one_time_count({one_time_count}) >= 3 => {condition5}")
+
+            # 6) Single prints
+            condition6 = self.single_prints(finished_periods)
+            logger.debug(f"strong_trending | Condition6: single_prints => {condition6}")
+
+            logger.debug(f"strong_trending | (Short) Final => acceptance({trending_acceptance}), c2({condition2}), c3({condition3}), c4({condition4}), c5({condition5}), c6({condition6})")
+            
+            # Make Accessible to Check Method.
+            self.trending_acceptance_s = trending_acceptance
+            self.prior_session_rotational = condition2
+            self.session_mid_s = condition4
+            self.one_time_framing_s = condition5
+                        
+            return (trending_acceptance and condition2 and condition3 and condition4 and condition5 and condition6)
+
         else:
-            condition5 = False
-
-        # --- Condition 6: Single Prints Must Be Present ---
-        condition6 = self.single_prints()
-
-        # --- Combine All Conditions ---
-        return (trending_acceptance and condition2 and condition3 and condition4 and condition5 and condition6)
+            logger.debug(f"strong_trending | Invalid direction ({self.direction}). Returning False.")
+            return False
 
     def input(self):
-        """
-        This revised input method now incorporates both trend day and strong trending checks.
-        """
-        ib_range = self.ib_high - self.ib_low
-
-        # Existing direction-based base conditions.
-        if self.direction == "short":
-            self.atr_condition = abs(self.ib_low - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl < self.orl
-            base_trend_condition = self.day_low < self.ib_low - 0.5 * ib_range
-
-            # Include your existing period high scan logic for short acceptance.
-            acceptance_condition = True
-            # ... (your period high scanning logic here) ...
-
-        elif self.direction == "long":
-            self.atr_condition = abs(self.ib_high - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl > self.orh
-            # For long, basic trend day requires the day high exceeds IBH + 0.5*(IB_range)
-            base_trend_condition = self.day_high > self.ib_high + 0.5 * ib_range
-            acceptance_condition = True  # further refined in check_trend_day below
-        else:
-            return False
-
-        # Base logic conditions (unchanged from your code)
-        base_logic = (
-            self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15)
-            and self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10)
-            and self.atr_condition
-            and abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1
-            and self.or_condition
-        )
-
-        # Check for trend day conditions.
-        self.trend_day = base_logic and self.check_trend_day()
-
-        # Check for strong trending (singles) regardless of the trend day flag.
-        self.strong_trending = self.check_strong_trending()
-
-        # In your alert logic you might now decide:
-        # - If trend_day is True, then #TRCT (Trend Day) conditions are met.
-        # - If strong_trending is also True, add an extra flag or modify the alert.
-        # They can both be true simultaneously.
-        final_logic = self.trend_day or self.strong_trending
-
-        logger.debug(f" TRCT | input | Product: {self.product_name} | Trend Day: {self.trend_day}, Strong Trending: {self.strong_trending}, Final Logic: {final_logic}")
-        return final_logic
+        logic = self.trend_day() or self.strong_trending()
+        logger.debug(f" TRCT | input | Product: {self.product_name} | Trend Day: {self.trend_day}, Strong Trending: {self.strong_trending}, Final Logic: {logic}")
+        return logic
 
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
@@ -629,9 +820,9 @@ class TRCT(Base):
             logger.info(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected")
             return
         self.color = "red" if self.direction == "short" else "green"
+        
         # Driving Input
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
                 last_alert = last_alerts.get(self.product_name)   
                 logger.debug(f" TRCT | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
@@ -640,63 +831,87 @@ class TRCT(Base):
                     logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition Met")
                     
                     # Logic For Trend Day
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
+                    if self.trend_day(): 
+                        self.c_trend_day = "x" 
                     else:
-                        self.c_within_atr = "  "                    
+                        self.c_trend_day = "  "                    
                     # Logic For Strong Trending
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
+                    if self.strong_trending(): 
+                        self.c_strong_trending = "x" 
                     else:
-                        self.c_within_atr = "  "                     
-                    # Logic For Acceptance Outside Of IB
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
-                    else:
-                        self.c_within_atr = "  "
-                    # Logic For Strong Slope to VWAP
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
-                    else:
-                        self.c_within_atr = "  "
-                    # Logic For One Time Framing
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x"
-                    # Logic For Holding in Trending Channel
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x" 
+                        self.c_strong_trending = "  "
+                    # Logic For Acceptance Inside Trending Channel
+                    if self.direction == "short": 
+                        if self.trending_acceptance_s:
+                            self.c_trending_acceptance = "x" 
+                        else:
+                            self.c_trending_acceptance = "  "
+                    elif self.direction == "long":
+                        if self.trending_acceptance_l:
+                            self.c_trending_acceptance = "x" 
+                        else:
+                            self.c_trending_acceptance = "  "
+                    # Logic For VWAP Strength
+                    if self.direction == "short": 
+                        if self.vwap_slope < -0.05:
+                            self.c_strong_vwap = "x" 
+                        else:
+                            self.c_strong_vwap = "  "
+                    elif self.direction == "long":
+                        if self.vwap_slope > 0.05:
+                            self.c_strong_vwap = "x" 
+                        else:
+                            self.c_strong_vwap = "  "
+                    # Logic For One-Time-Framing
+                    if self.direction == "short": 
+                        if self.one_time_framing_s:
+                            self.c_otf = "x" 
+                        else:
+                            self.c_otf = "  "
+                    elif self.direction == "long":
+                        if self.one_time_framing_l:
+                            self.c_otf = "x" 
+                        else:
+                            self.c_otf = "  "
+                    # Logic For Acceptance Outside of IB range
+                    if self.direction == "short": 
+                        if self.ib_acceptance_s:
+                            self.c_iba = "x" 
+                        else:
+                            self.c_iba = "  "
+                    elif self.direction == "long":
+                        if self.ib_acceptance_l:
+                            self.c_iba = "x" 
+                        else:
+                            self.c_iba = "  " 
                     # Logic For Within 1 EXP Move of 5D
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x"  
+                    if self.cpl < (self.fd_vpoc + self.exp_rng) and self.cpl > (self.fd_vpoc - self.exp_rng):
+                        self.c_fd_exp = "x" 
+                    else:
+                        self.c_fd_exp = "  "
                     # Logic For Value Following Price
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x" 
+                    if self.value_following_price:
+                        self.c_v_fp = "x"
+                    else:
+                        self.c_v_fp = "  "
                     # Logic For Above / Below RTH MID
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x" 
+                    if self.direction == "short": 
+                        if self.session_mid_s:
+                            self.c_sm = "x" 
+                        else:
+                            self.c_sm = "  "
+                    elif self.direction == "long":
+                        if self.session_mid_l:
+                            self.c_sm = "x" 
+                        else:
+                            self.c_sm = "  "  
                     # Logic For Prior Day Was Rotational
-                    self.c_orderflow = "  "
-                    if self.direction == "short" and self.delta < 0:
-                        self.c_orderflow = "x"
-                    elif self.direction == "long" and self.delta > 0:
-                        self.c_orderflow = "x"                                                                      
+                    if self.prior_day() == "Rotational":
+                        self.c_rotational = "x"                                                                    
+                    else:
+                        self.c_rotational = "  "
                     # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_within_atr] if condition == "x")   
+                    self.score = sum(1 for condition in [self.c_rotational, self.c_sm, self.c_v_fp, self.c_fd_exp, self.c_iba, self.c_otf, self.c_strong_vwap, self.c_trending_acceptance, self.c_strong_trending, self.c_trend_day] if condition == "x")   
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -713,18 +928,14 @@ class TRCT(Base):
         
         direction_settings = {
             "long": {
-                "pv_indicator": "^",
-                "c_euro_ib_text": "Above Euro IBH",
-                "c_or_text": "Above 30 Sec Opening Range High",
-                "emoji_indicator": "🔼",
-                "color_circle": "🔵"
+                "dir_indicator": "^",
+                "destination": "Highs",
+                "mid": "Above",
             },
             "short": {
-                "pv_indicator": "v",
-                "c_euro_ib_text": "Below Euro IBL",
-                "c_or_text": "Below 30 Sec Opening Range Low",
-                "emoji_indicator": "🔽",
-                "color_circle": "🔴"
+                "dir_indicator": "v",
+                "destination": "Lows",
+                "mid": "Below",
             }
         }
 
@@ -733,14 +944,14 @@ class TRCT(Base):
             raise ValueError(f" TRCT | discord_message | Note: Invalid direction '{self.direction}'")
         
         # Title Construction with Emojis
-        title = f"{settings['color_circle']} **{self.product_name} - Playbook Alert** {settings['emoji_indicator']} **PVAT {settings['pv_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **TRCT {settings['dir_indicator']}**"
 
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.p_vpoc} (Prior Session Vpoc)_\n"
-                f"**Risk**: _Wrong if auction fails to complete PVPOC test before IB, or accepts away from value_\n"
-                f"**Driving Input**: _Auction opening in range or slightly outside range, divergent from prior session Vpoc_\n"
+                f"**Destination**: _{settings['destination']} of the session in the last hour\n"
+                f"**Risk**: Wrong if auction stops OTF for more than one 30m period, accepts back inside IB, or returns to VWAP\n"
+                f"**Driving Input**:The auction is presenting a trend day. This trade seeks entry with the participants who are driving trend.\n"
             ),
             color=self.get_color()
         )
@@ -751,18 +962,20 @@ class TRCT(Base):
 
         # Criteria Details
         criteria = (
-            f"• **[{self.c_within_atr}]** Target Within ATR Of IB\n"
-            f"• **[{self.c_orderflow}]** Orderflow In Direction Of Target (_{self.delta}_) \n"
-            f"• **[{self.c_euro_ib}]** {settings['c_euro_ib_text']}\n"
-            f"• **[{self.c_or}]** {settings['c_or_text']}\n"
-            f"\n• **[{self.c_between}]** Between DVWAP and PVPOC\n"
-            f"Or\n"
-            f"• **[{self.c_align}]** DVWAP and PVPOC aligned\n"
+            f"• [{self.c_trend_day}] Trend Day | [{self.c_strong_trending}] Strong Trending\n"
+            f"• [{self.c_otf}] One Time Framing \n"
+            f"• [{self.c_iba}] Acceptance Outside of IB Range\n"
+            f"• [{self.c_strong_vwap}] Strong Slope to VWAP ({self.vwap_slope*100})\n"
+            f"• [{self.c_trending_acceptance}] Holding In Trending Channel\n"
+            f"• [{self.c_v_fp}] Value Following Price\n"
+            f"• [{self.c_sm}] {settings['mid']} RTH Mid\n"
+            f"• [{self.c_rotational}] Prior Day Was Rotational\n"
+            f"• [{self.c_fd_exp}] Within 1 Expected Move of the 5D\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
         # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 5_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 9_", inline=False)
         
         # Alert Time and Price Context
         alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
@@ -782,6 +995,6 @@ class TRCT(Base):
             'direction': self.direction,
             'alert_price': self.cpl,
             'score': self.score,
-            'target': self.prior_mid,
+            'target': None,
         }
         log_alert_async(alert_details)

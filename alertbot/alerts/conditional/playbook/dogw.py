@@ -385,7 +385,7 @@ class DOGW(Base):
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
         # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 5_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 7_", inline=False)
         
         # Alert Time and Price Context
         embed.add_embed_field(name="**Alert Time / Price**", value=f"_{alert_time_formatted}_ EST | {self.cpl}_", inline=False)
