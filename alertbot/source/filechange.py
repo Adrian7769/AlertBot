@@ -48,16 +48,13 @@ class FileChangeHandler(FileSystemEventHandler):
             current_time = time_module.time()
             last_time = self.last_processed.get(filepath, 0)
             if current_time - last_time < self.debounce_interval:
-
                 return
             else:
-
                 self.last_processed[filepath] = current_time
 
             logger.debug(f" FileChange | Note: {filepath} modified")
 
             try:
-
                 task = next((t for t in self.files if os.path.abspath(t["filepath"]) == filepath), None)
                 
                 if task:
@@ -69,20 +66,15 @@ class FileChangeHandler(FileSystemEventHandler):
                         return
 
                     with self.lock:
-
                         for condition in self.conditions:
                             if file_name in condition["required_files"]:
                                 self.updated_conditions[condition["name"]].add(file_name)
                                 logger.debug(f" FileChange | Condition: {condition['name']} | CurrentQueue: {self.updated_conditions[condition['name']]}")
-
                                 if self.updated_conditions[condition["name"]] == set(condition["required_files"]):
-
                                     if condition["name"] not in self.conditions_in_queue:
-
                                         self.processing_queue.put(condition)
                                         self.conditions_in_queue.add(condition["name"])
                                         logger.debug(f" FileChange | Condition: {condition['name']} | Note: All Required Files")
-
                                         self.updated_conditions[condition["name"]] = set()
                                     else:
                                         logger.debug(f" FileChange | Condition: {condition['name']} | Note: Already In Queue")
@@ -93,7 +85,6 @@ class FileChangeHandler(FileSystemEventHandler):
                 logger.error(f" FileChange | FilePath: {event.src_path} | Note: Error Processing File: {e}")
 
     def extract_product_and_id(self, task_name):
-
         parts = task_name.split('_')
         if len(parts) < 2:
             return None, None
@@ -106,7 +97,6 @@ class FileChangeHandler(FileSystemEventHandler):
             return now >= start_time or now <= end_time
         
     def process_queue(self):
-
         while True:
             condition = self.processing_queue.get()
             try:
@@ -116,15 +106,27 @@ class FileChangeHandler(FileSystemEventHandler):
                 est = ZoneInfo('America/New_York')
                 now = datetime.now(est).time()
                 
-                start_time = condition.get("start_time")
-                end_time = condition.get("end_time")
-                
-                if start_time and end_time:
-                    if not self.is_now_in_time_range(start_time, end_time, now):
-                        logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within the time range")
+                # Check if condition defines multiple time windows
+                if "time_windows" in condition:
+                    in_range = False
+                    for window in condition["time_windows"]:
+                        start_time = window.get("start_time")
+                        end_time = window.get("end_time")
+                        if start_time and end_time and self.is_now_in_time_range(start_time, end_time, now):
+                            in_range = True
+                            break
+                    if not in_range:
+                        logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within any specified time window")
                         continue
                 else:
-                    logger.warning(f" FileChange | Condition: {condition_name} | Note: No time range specified for condition. Proceeding with processing.")
+                    start_time = condition.get("start_time")
+                    end_time = condition.get("end_time")
+                    if start_time and end_time:
+                        if not self.is_now_in_time_range(start_time, end_time, now):
+                            logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within the time range")
+                            continue
+                    else:
+                        logger.warning(f" FileChange | Condition: {condition_name} | Note: No time range specified for condition. Proceeding with processing.")
 
                 logger.debug(f" FileChange | Condition: {condition_name} | Processing: {required_files}")
 
@@ -156,7 +158,6 @@ class FileChangeHandler(FileSystemEventHandler):
                 logger.debug(f" FileChange | Condition: {condition_name} | Note: Completed Processing")
             except Exception as e:
                 logger.error(f" FileChange | Condition: {condition['name']} | Note: Error processing condition: {e}")
-            
             finally:
                 with self.lock:
                     self.conditions_in_queue.discard(condition["name"])

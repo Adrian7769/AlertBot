@@ -28,6 +28,8 @@ external_bias = [
     {"sheet_name": "RTY_PREP", "sheet_id": "1G-gnb5ZYEnQdd9nJyraguPhlnLYMA09Cpz9EH-_8nkM", "row_number": 52, "col_number": 3},
     {"sheet_name": "CL_PREP", "sheet_id": "1SFfvZyBj5XvCuzx8bodqQ29yWtuIoTrPqmmCBaHGRzY", "row_number": 52, "col_number": 3}
 ]
+from datetime import time as datetime_time
+
 conditions = [
     {
         "name": "PVAT_ES",
@@ -76,129 +78,135 @@ conditions = [
         "required_files": ["CL_2"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
-    },   
+    },
     {
         "name": "NEUTRAL_ES",
         "required_files": ["ES_1","ES_2","ES_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "NEUTRAL_NQ",
         "required_files": ["NQ_1","NQ_2","NQ_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "NEUTRAL_RTY",
         "required_files": ["RTY_1","RTY_2","RTY_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "NEUTRAL_CL",
         "required_files": ["CL_1","CL_2","CL_3"],
         "start_time": datetime_time(10, 0), 
         "end_time": datetime_time(14, 30),
-    }, 
+    },
     {
         "name": "DATR_ES",
         "required_files": ["ES_1","ES_2","ES_3","ES_4"],
         "start_time": datetime_time(9, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "DATR_NQ",
         "required_files": ["NQ_1","NQ_2","NQ_3","NQ_4"],
         "start_time": datetime_time(9, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "DATR_RTY",
         "required_files": ["RTY_1","RTY_2","RTY_3","RTY_4"],
         "start_time": datetime_time(9, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "DATR_CL",
         "required_files": ["CL_1","CL_2","CL_3","CL_4"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
-    },   
+    },
     {
         "name": "DOGW_ES",
         "required_files": ["ES_1", "ES_3", "ES_4", "ES_6", "ES_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
-    },   
+    },
     {
         "name": "DOGW_NQ",
         "required_files": ["NQ_1", "NQ_3", "NQ_4", "NQ_6", "NQ_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
-    },   
+    },
     {
         "name": "DOGW_RTY",
         "required_files": ["RTY_1", "RTY_3", "RTY_4", "RTY_6", "RTY_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
-    },   
+    },
     {
         "name": "DOGW_CL",
         "required_files": ["CL_1", "CL_3", "CL_4", "CL_6", "CL_7"],
         "start_time": datetime_time(9, 10), 
         "end_time": datetime_time(10, 0),
-    },  
+    },
     {
         "name": "TRCT_ES",
         "required_files": ["ES_1","ES_2","ES_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "TRCT_NQ",
         "required_files": ["NQ_1","NQ_2","NQ_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "TRCT_RTY",
         "required_files": ["RTY_1","RTY_2","RTY_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
-    },   
+    },
     {
         "name": "TRCT_CL",
         "required_files": ["CL_1","CL_2","CL_3"],
-        "start_time": datetime_time(10, 00), 
+        "start_time": datetime_time(10, 0), 
         "end_time": datetime_time(14, 30),
     },
-    
     {
         "name": "IBGW_ES",
-        "required_files": [],
-        "start_time": datetime_time(10, 30), 
-        "end_time": datetime_time(16, 0),
-    },   
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6"],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
     {
         "name": "IBGW_NQ",
-        "required_files": [],
-        "start_time": datetime_time(10, 30), 
-        "end_time": datetime_time(16, 0),
-    },   
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6"],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
     {
         "name": "IBGW_RTY",
-        "required_files": [],
-        "start_time": datetime_time(10, 30), 
-        "end_time": datetime_time(16, 0),
-    },   
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6"],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
     {
         "name": "IBGW_CL",
-        "required_files": [],
-        "start_time": datetime_time(10, 00), 
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6"],
+        "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
-    },     
+    },
 ]
+
 condition_functions = {
     "PVAT": PVAT,
     "DATR": DATR,
