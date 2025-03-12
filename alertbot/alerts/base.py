@@ -55,7 +55,7 @@ class Base:
 
         # Time Regulations for Crude 
         self.crude_open = time(9, 00)
-        self.crude_ib = time(10, 00)
+        self.crude_ib = time(10, 00)       
         self.crude_close = time(14, 30) 
         
         # Custom Time Regulations for Playbook

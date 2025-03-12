@@ -149,31 +149,55 @@ conditions = [
         "start_time": datetime_time(9, 10), 
         "end_time": datetime_time(10, 0),
     },  
-    
     {
         "name": "TRCT_ES",
-        "required_files": [],
+        "required_files": ["ES_1","ES_2","ES_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
     },   
     {
         "name": "TRCT_NQ",
-        "required_files": [],
+        "required_files": ["NQ_1","NQ_2","NQ_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
     },   
     {
         "name": "TRCT_RTY",
-        "required_files": [],
+        "required_files": ["RTY_1","RTY_2","RTY_3"],
         "start_time": datetime_time(10, 30), 
         "end_time": datetime_time(16, 0),
     },   
     {
         "name": "TRCT_CL",
+        "required_files": ["CL_1","CL_2","CL_3"],
+        "start_time": datetime_time(10, 00), 
+        "end_time": datetime_time(14, 30),
+    },
+    
+    {
+        "name": "IBGW_ES",
+        "required_files": [],
+        "start_time": datetime_time(10, 30), 
+        "end_time": datetime_time(16, 0),
+    },   
+    {
+        "name": "IBGW_NQ",
+        "required_files": [],
+        "start_time": datetime_time(10, 30), 
+        "end_time": datetime_time(16, 0),
+    },   
+    {
+        "name": "IBGW_RTY",
+        "required_files": [],
+        "start_time": datetime_time(10, 30), 
+        "end_time": datetime_time(16, 0),
+    },   
+    {
+        "name": "IBGW_CL",
         "required_files": [],
         "start_time": datetime_time(10, 00), 
         "end_time": datetime_time(14, 30),
-    },         
+    },     
 ]
 condition_functions = {
     "PVAT": PVAT,
@@ -182,6 +206,7 @@ condition_functions = {
     "NEUTRAL": NEUTRAL,
     "DOGW": DOGW,
     "TRCT": TRCT,
+    "IBGW": IBGW,
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
