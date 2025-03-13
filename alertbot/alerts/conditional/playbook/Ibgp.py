@@ -16,20 +16,15 @@ class IBGP(Base):
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables (Round All Variables)
-        self.p_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
         self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
         self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
         self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
         self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
         self.euro_ibh = round(self.variables.get(f'{self.product_name}_EURO_IBH'), 2)
         self.euro_ibl = round(self.variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)
         self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
         self.rth_vwap = round(self.variables.get(f'{self.product_name}_RTH_VWAP'), 2)
         self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
-        self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
-        self.total_rth_delta = round(self.variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
         self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
         self.prior_ibh = round(self.variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
         self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)       
@@ -49,7 +44,7 @@ class IBGP(Base):
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
         self.cl_impvol = config.cl_impvol 
-        self.exp_rng, self.exp_hi, self.exp_lo = self.exp_range() 
+        self.exp_rng = self.exp_range() 
 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def prior_day(self):
@@ -150,11 +145,9 @@ class IBGP(Base):
             raise ValueError(f"IBGP | exp_range | Product: {self.product_name} | Note: Unknown Product")
 
         exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
-        exp_hi = round(self.prior_close + exp_range, 2)
-        exp_lo = round(self.prior_close - exp_range, 2)
         
-        logger.debug(f" IBGP | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-        return exp_range, exp_hi, exp_lo
+        logger.debug(f" IBGP | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
+        return exp_range
     def one_time_framing(self):
         if self.product_name == "CL":
             period_times = {

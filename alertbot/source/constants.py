@@ -5,7 +5,7 @@ from alertbot.alerts.conditional.playbook.datr import DATR
 from alertbot.alerts.conditional.playbook.dogw import DOGW
 from alertbot.alerts.conditional.playbook.bsnd import BSND # Interesting...
 from alertbot.alerts.conditional.playbook.hvnr import HVNR # GG
-from alertbot.alerts.conditional.playbook.Ibgp import IBGP # Oh God
+from alertbot.alerts.conditional.playbook.Ibgp import IBGP 
 from alertbot.alerts.conditional.playbook.Ibgw import IBGW
 from alertbot.alerts.conditional.playbook.strc import STRC # GG
 from alertbot.alerts.conditional.playbook.trct import TRCT
@@ -203,10 +203,9 @@ conditions = [
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },
-    
     {
         "name": "IBGP_ES",
-        "required_files": [],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -214,7 +213,7 @@ conditions = [
     },
     {
         "name": "IBGP_NQ",
-        "required_files": [],
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -222,7 +221,7 @@ conditions = [
     },
     {
         "name": "IBGP_RTY",
-        "required_files": [],
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -230,10 +229,41 @@ conditions = [
     },
     {
         "name": "IBGP_CL",
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6"],
+        "start_time": datetime_time(9, 0), 
+        "end_time": datetime_time(14, 30),
+    },  
+    
+    {
+        "name": "XTFD_ES",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "XTFD_NQ",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "XTFD_RTY",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "XTFD_CL",
         "required_files": [],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
-    },    
+    },      
 ]
 
 condition_functions = {
