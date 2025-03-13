@@ -291,6 +291,7 @@ class Initialization(Base):
             match task["name"]:
                 case "ES_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['ES_RTH_VWAP'] = float(data.iloc[0]['[ID24.SG1] RTH_VWAP'])
                     variables['ES_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['ES_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['ES_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
@@ -510,6 +511,7 @@ class Initialization(Base):
                     variables['ES_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "NQ_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['NQ_RTH_VWAP'] = float(data.iloc[0]['[ID24.SG1] RTH_VWAP'])
                     variables['NQ_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['NQ_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['NQ_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
@@ -728,6 +730,7 @@ class Initialization(Base):
                     variables['NQ_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "RTY_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['RTY_RTH_VWAP'] = float(data.iloc[0]['[ID24.SG1] RTH_VWAP'])
                     variables['RTY_VWAP_SLOPE'] = float(data.iloc[0]['[ID23.SG2] Vwap_Slope'])
                     variables['RTY_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['RTY_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])
@@ -946,6 +949,7 @@ class Initialization(Base):
                     variables['RTY_ORL'] = float(data.iloc[0]['[ID1.SG3] ORL'])
                 case "CL_1":
                     # ------------------- Use Integer Based iLoc ----------------------- #
+                    variables['CL_RTH_VWAP'] = float(data.iloc[0]['[ID22.SG1] RTH_VWAP'])
                     variables['CL_VWAP_SLOPE'] = float(data.iloc[0]['[ID21.SG2] Vwap_Slope'])
                     variables['CL_DAY_OPEN'] = float(data.iloc[0]['[ID2.SG1] Day_Open'])
                     variables['CL_DAY_HIGH'] = float(data.iloc[0]['[ID2.SG2] Day_High'])

@@ -942,7 +942,16 @@ class TRCT(Base):
         settings = direction_settings.get(self.direction)
         if not settings:
             raise ValueError(f" TRCT | discord_message | Note: Invalid direction '{self.direction}'")
-        
+        if self.direction == "long":
+            if self.vwap_slope > 0.05:
+                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100})\n"
+            else:
+                inline_text = f"Strong Slope to dVWAP \n"
+        elif self.direction == "short":
+            if self.vwap_slope < -0.05:
+                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100})\n"
+            else:
+                inline_text = f"Strong Slope to dVWAP \n"        
         # Title Construction with Emojis
         title = f"**{self.product_name} - Playbook Alert** - **TRCT {settings['dir_indicator']}**"
 
@@ -965,7 +974,7 @@ class TRCT(Base):
             f"• [{self.c_trend_day}] Trend Day | [{self.c_strong_trending}] Strong Trending\n"
             f"• [{self.c_otf}] One Time Framing \n"
             f"• [{self.c_iba}] Acceptance Outside of IB Range\n"
-            f"• [{self.c_strong_vwap}] Strong Slope to VWAP ({self.vwap_slope*100})\n"
+            f"• [{self.c_strong_vwap}] {inline_text}"
             f"• [{self.c_trending_acceptance}] Holding In Trending Channel\n"
             f"• [{self.c_v_fp}] Value Following Price\n"
             f"• [{self.c_sm}] {settings['mid']} RTH Mid\n"

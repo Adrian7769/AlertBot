@@ -3,15 +3,15 @@ from datetime import time as datetime_time
 from alertbot.alerts.conditional.playbook.pvat import PVAT
 from alertbot.alerts.conditional.playbook.datr import DATR
 from alertbot.alerts.conditional.playbook.dogw import DOGW
-from alertbot.alerts.conditional.playbook.bsnd import BSND
-from alertbot.alerts.conditional.playbook.hvnr import HVNR
-from alertbot.alerts.conditional.playbook.Ibgp import IBGP
+from alertbot.alerts.conditional.playbook.bsnd import BSND # Interesting...
+from alertbot.alerts.conditional.playbook.hvnr import HVNR # GG
+from alertbot.alerts.conditional.playbook.Ibgp import IBGP # Oh God
 from alertbot.alerts.conditional.playbook.Ibgw import IBGW
-from alertbot.alerts.conditional.playbook.strc import STRC
+from alertbot.alerts.conditional.playbook.strc import STRC # GG
 from alertbot.alerts.conditional.playbook.trct import TRCT
-from alertbot.alerts.conditional.playbook.trev import TREV
-from alertbot.alerts.conditional.playbook.trfd import TRFD
-from alertbot.alerts.conditional.playbook.xtfd import XTFD
+from alertbot.alerts.conditional.playbook.trev import TREV # (More Data)
+from alertbot.alerts.conditional.playbook.trfd import TRFD # (More Data)
+from alertbot.alerts.conditional.playbook.xtfd import XTFD # OK
 # ---------------------- Contextual ------------------------- #
 from alertbot.alerts.conditional.contextual.neutral import NEUTRAL
 from alertbot.alerts.conditional.contextual.pre_ib import PRE_IB_BIAS
@@ -28,8 +28,6 @@ external_bias = [
     {"sheet_name": "RTY_PREP", "sheet_id": "1G-gnb5ZYEnQdd9nJyraguPhlnLYMA09Cpz9EH-_8nkM", "row_number": 52, "col_number": 3},
     {"sheet_name": "CL_PREP", "sheet_id": "1SFfvZyBj5XvCuzx8bodqQ29yWtuIoTrPqmmCBaHGRzY", "row_number": 52, "col_number": 3}
 ]
-from datetime import time as datetime_time
-
 conditions = [
     {
         "name": "PVAT_ES",
@@ -205,6 +203,37 @@ conditions = [
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },
+    
+    {
+        "name": "IBGP_ES",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "IBGP_NQ",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "IBGP_RTY",
+        "required_files": [],
+        "time_windows": [
+            {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
+            {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
+        ],
+    },
+    {
+        "name": "IBGP_CL",
+        "required_files": [],
+        "start_time": datetime_time(9, 0), 
+        "end_time": datetime_time(14, 30),
+    },    
 ]
 
 condition_functions = {
@@ -215,6 +244,8 @@ condition_functions = {
     "DOGW": DOGW,
     "TRCT": TRCT,
     "IBGW": IBGW,
+    "IBGP": IBGP,
+    "XTFD": XTFD,
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 

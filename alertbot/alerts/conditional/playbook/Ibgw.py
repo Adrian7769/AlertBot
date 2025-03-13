@@ -393,7 +393,7 @@ class IBGW(Base):
  
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" TRCT | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f" IBGW | discord_message | Note: Invalid direction '{self.direction}'")
         
         if self.direction == "long":
             self.destination = self.ib_high + 0.5 * (self.ib_high - self.ib_low)
@@ -407,7 +407,16 @@ class IBGW(Base):
                 ot = self.open_type()
             else:
                 ot = ""            
-
+        if self.direction == "long":
+            if self.vwap_slope > 0.05:
+                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
+            else:
+                inline_text = f"Noticeable Slope to dVWAP \n"
+        elif self.direction == "short":
+            if self.vwap_slope < -0.05:
+                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
+            else:
+                inline_text = f"Noticeable Slope to dVWAP \n"
         # Title Construction with Emojis
         title = f"**{self.product_name} - Playbook Alert** - **IBGW {settings['dir_indicator']}**"
     
@@ -434,7 +443,7 @@ class IBGW(Base):
             f"• [{self.c_skew}] Skew In Profile Towards IB {settings['destination']}\n"
             f"• [{self.c_composite_ref}] IB Broke From Composite Value Reference\n"
             f"• [{self.c_rotational}] Prior Session Was Balanced\n"
-            f"• [{self.c_rotational}] Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
+            f"• [{self.c_vwap_slope}] {inline_text}"
             f"• [{self.c_ib_ext_half}] Have Not Hit 1.5x {settings['destination']}\n"
             f"• [{self.c_magnet}] Clear Magnet Ahead\n"
             f"• [{self.c_euro_ib}] {settings['mid']} Euro {settings['destination']}\n"
