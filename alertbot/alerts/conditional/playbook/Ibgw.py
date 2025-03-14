@@ -149,6 +149,14 @@ class IBGW(Base):
         return exp_range
     
     def one_time_framing(self):
+        """
+        Determines one-time framing conditions based on the last two finished periods.
+        Extensive logging is provided to trace computation values.
+        
+        Returns:
+            True if one-time framing condition is met, False otherwise.
+        """
+        # Define period times based on the product.
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -156,6 +164,7 @@ class IBGW(Base):
                 'G': time(12, 0), 'H': time(12, 30), 'I': time(13, 0),
                 'J': time(13, 30), 'K': time(14, 0),
             }
+            logger.debug("one_time_framing | Using CL period times.")
         else:
             period_times = {
                 'A': time(9, 30), 'B': time(10, 0), 'C': time(10, 30),
@@ -164,45 +173,82 @@ class IBGW(Base):
                 'J': time(14, 0), 'K': time(14, 30), 'L': time(15, 0),
                 'M': time(15, 30),
             }
+            logger.debug("one_time_framing | Using non-CL period times.")
         
+        # Get the current time based on the established timezone.
         now = datetime.now(self.est).time()
+        logger.debug(f"one_time_framing | Current time: {now}")
+        
+        # Sort periods and filter out the finished ones.
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
+        logger.debug(f"one_time_framing | Finished periods: {finished_periods}")
+        
         if len(finished_periods) < 2:
+            logger.debug("one_time_framing | Not enough finished periods. Returning False.")
             return False
+        
+        # Consider the last two finished periods.
         last_two = finished_periods[-2:]
-        period1 = last_two[0]
-        period2 = last_two[1]
+        period1, period2 = last_two[0], last_two[1]
+        logger.debug(f"one_time_framing | Last two periods selected: {period1}, {period2}")
+        
+        # Retrieve high and low values for both periods.
         p1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
         p1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
         p2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
         p2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
+        logger.debug(f"one_time_framing | Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        
+        # If any value is missing, the check fails.
         if None in (p1_high, p1_low, p2_high, p2_low):
+            logger.debug("one_time_framing | One or more period values missing. Returning False.")
             return False
+        
+        # Round the values to two decimals.
         p1_high = round(p1_high, 2)
         p1_low = round(p1_low, 2)
         p2_high = round(p2_high, 2)
         p2_low = round(p2_low, 2)
+        logger.debug(f"one_time_framing | Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        
+        # Get the current day's high and low.
         current_high = self.day_high
         current_low = self.day_low
+        logger.debug(f"one_time_framing | Current day's HIGH={current_high}, LOW={current_low}")
+        
+        # Evaluate the one-time framing conditions based on direction.
         if self.direction == "long":
+            logger.debug("one_time_framing | Evaluating conditions for LONG direction.")
             if p2_high > p1_high and p2_low > p1_low:
+                logger.debug(f"one_time_framing | {period2} values are greater than {period1} values.")
                 if current_high > p2_high and current_low > p2_low:
+                    logger.debug("one_time_framing | Current day values exceed period2 values. Returning True.")
                     return True
                 else:
+                    logger.debug("one_time_framing | Current day values do not exceed period2 values. Returning False.")
                     return False
             else:
+                logger.debug("one_time_framing | Condition failed: period2 values are not both greater than period1 values for LONG. Returning False.")
                 return False
+
         elif self.direction == "short":
+            logger.debug("one_time_framing | Evaluating conditions for SHORT direction.")
             if p2_high < p1_high and p2_low < p1_low:
+                logger.debug(f"one_time_framing | {period2} values are lower than {period1} values.")
                 if current_high < p2_high and current_low < p2_low:
+                    logger.debug("one_time_framing | Current day values are lower than period2 values. Returning True.")
                     return True
                 else:
+                    logger.debug("one_time_framing | Current day values are not lower than period2 values. Returning False.")
                     return False
             else:
+                logger.debug("one_time_framing | Condition failed: period2 values are not both lower than period1 values for SHORT. Returning False.")
                 return False
         else:
+            logger.debug("one_time_framing | Invalid direction specified. Returning False.")
             return False
+
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         # Direction Based Logic
