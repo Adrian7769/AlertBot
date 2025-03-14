@@ -3,14 +3,13 @@ from datetime import time as datetime_time
 from alertbot.alerts.conditional.playbook.pvat import PVAT
 from alertbot.alerts.conditional.playbook.datr import DATR
 from alertbot.alerts.conditional.playbook.dogw import DOGW
-from alertbot.alerts.conditional.playbook.bsnd import BSND # Interesting...
+from alertbot.alerts.conditional.playbook.bsnd import BSND # GG
 from alertbot.alerts.conditional.playbook.hvnr import HVNR # GG
 from alertbot.alerts.conditional.playbook.Ibgp import IBGP 
 from alertbot.alerts.conditional.playbook.Ibgw import IBGW
-from alertbot.alerts.conditional.playbook.strc import STRC # GG
+from alertbot.alerts.conditional.playbook.strc import STRC # Interesting...
 from alertbot.alerts.conditional.playbook.trct import TRCT
 from alertbot.alerts.conditional.playbook.trev import TREV # (More Data)
-from alertbot.alerts.conditional.playbook.trfd import TRFD # (More Data)
 from alertbot.alerts.conditional.playbook.xtfd import XTFD # OK
 # ---------------------- Contextual ------------------------- #
 from alertbot.alerts.conditional.contextual.neutral import NEUTRAL
@@ -289,25 +288,25 @@ conditions = [
     },
     
     {
-        "name": "STRC_ES",
+        "name": "HVNR_ES",
         "required_files": [],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(10, 30),
     },
     {
-        "name": "STRC_NQ",
+        "name": "HVNR_NQ",
         "required_files": [],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(10, 30),
     },
     {
-        "name": "STRC_RTY",
+        "name": "HVNR_RTY",
         "required_files": [],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(10, 30),
     },
     {
-        "name": "STRC_CL",
+        "name": "HVNR_CL",
         "required_files": [],
         "start_time": datetime_time(9, 0),
         "end_time": datetime_time(10, 0),
@@ -325,7 +324,7 @@ condition_functions = {
     "IBGP": IBGP,
     "XTFD": XTFD,
     "TREV": TREV,
-    "STRC": STRC
+    "STRC": HVNR
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
