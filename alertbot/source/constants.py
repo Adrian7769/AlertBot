@@ -233,7 +233,6 @@ conditions = [
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },  
-    
     {
         "name": "XTFD_ES",
         "required_files": ["ES_1", "ES_2", "ES_3", "ES_4"],
@@ -263,7 +262,56 @@ conditions = [
         "required_files": ["CL_1", "CL_2", "CL_3", "CL_4"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
-    },      
+    }, 
+    {
+        "name": "TREV_ES",
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4"],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "TREV_NQ",
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4"],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "TREV_RTY",
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4"],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "TREV_CL",
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4"],
+        "start_time": datetime_time(9, 0),
+        "end_time": datetime_time(10, 0),
+    },
+    
+    {
+        "name": "STRC_ES",
+        "required_files": [],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "STRC_NQ",
+        "required_files": [],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "STRC_RTY",
+        "required_files": [],
+        "start_time": datetime_time(9, 30),
+        "end_time": datetime_time(10, 30),
+    },
+    {
+        "name": "STRC_CL",
+        "required_files": [],
+        "start_time": datetime_time(9, 0),
+        "end_time": datetime_time(10, 0),
+    },              
 ]
 
 condition_functions = {
@@ -276,7 +324,8 @@ condition_functions = {
     "IBGW": IBGW,
     "IBGP": IBGP,
     "XTFD": XTFD,
-    "STRC": STRC,
+    "TREV": TREV,
+    "STRC": STRC
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 

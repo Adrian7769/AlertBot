@@ -16,15 +16,15 @@ class TREV(Base):
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables (Round All Variables)
-        self.p_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
+        self.prior_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
         self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
         self.p_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
         self.p_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
+        self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
+        self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
+        self.prior_prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_PRIOR_HIGH'), 2)
+        self.prior_prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_PRIOR_LOW'), 2)                
         self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.euro_ibh = round(self.variables.get(f'{self.product_name}_EURO_IBH'), 2)
-        self.euro_ibl = round(self.variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)
         self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
         self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
         self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
@@ -32,6 +32,8 @@ class TREV(Base):
         self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
         self.ib_high = round(self.variables.get(f'{product_name}_IB_HIGH'), 2)
         self.ib_low = round(self.variables.get(f'{product_name}_IB_LOW'), 2)
+        self.fd_vpoc = round(variables.get(f'{product_name}_5D_VPOC'), 2)
+        self.td_vpoc = round(variables.get(f'{product_name}_20D_VPOC'), 2)        
         
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
@@ -39,7 +41,8 @@ class TREV(Base):
         self.cl_impvol = config.cl_impvol 
         
         self.delta = self.total_delta()
-        self.exp_rng, self.exp_hi, self.exp_lo = self.exp_range() 
+        self.exp_rng = self.exp_range() 
+        self.gap, self.gap_tier, self.gap_size = self.gap_info()
 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
@@ -60,20 +63,74 @@ class TREV(Base):
             raise ValueError(f" TREV | exp_range | Product: {self.product_name} | Note: Unknown Product")
 
         exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
-        exp_hi = round(self.prior_close + exp_range, 2)
-        exp_lo = round(self.prior_close - exp_range, 2)
         
-        logger.debug(f" TREV | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-        return exp_range, exp_hi, exp_lo
-        
+        logger.debug(f" TREV | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
+        return exp_range
+    
+    def gap_info(self):
+        gap = ""
+        gap_tier = ""
+        gap_size = 0
+        if self.day_open > self.prior_high:
+            gap_size = round((self.day_open - self.prior_high), 2)
+            gap = "Gap Up"
+            if self.exp_rng == 0:
+                gap_tier = "Undefined"  
+            else:
+                gap_ratio = round((gap_size / self.exp_rng) , 2)
+                if gap_ratio <= 0.5:
+                    gap_tier = "Tier_1"
+                elif gap_ratio <= 0.75:
+                    gap_tier = "Tier_2"
+                else:
+                    gap_tier = "Tier_3"
+        elif self.day_open < self.prior_low:
+            gap_size = round((self.prior_low - self.day_open), 2)
+            gap = "Gap Down"
+            if self.exp_rng == 0:
+                gap_tier = "Undefined" 
+            else:
+                gap_ratio = round((gap_size / self.exp_rng) , 2)
+                if gap_ratio <= 0.5:
+                    gap_tier = "Tier_1"
+                elif gap_ratio <= 0.75:
+                    gap_tier = "Tier_2"
+                else:
+                    gap_tier = "Tier_3"
+        else:
+            gap = "No Gap"
+            gap_tier = "Tier_0"
+            gap_size = 0
+        return gap_tier, gap, gap_size
         
     def total_delta(self):
-
-        # Calculation (Product Specific or Not)        
         total_delta = self.total_ovn_delta + self.total_rth_delta
-        
         logger.debug(f" TREV | total_delta | TOTAL_DELTA: {total_delta}")
-        return total_delta   
+        return total_delta  
+     
+    def posture(self):
+        threshold = round((self.exp_rng * 0.68), 2)
+        if (abs(self.cpl - self.fd_vpoc) <= threshold) and (abs(self.fd_vpoc - self.td_vpoc) <= threshold):
+            posture = "PRICE=5D=20D"
+        elif (self.cpl > self.fd_vpoc + threshold) and (self.fd_vpoc > self.td_vpoc + threshold):
+            posture = "PRICE^5D^20D"
+        elif (self.cpl < self.fd_vpoc - threshold) and (self.fd_vpoc < self.td_vpoc - threshold):
+            posture = "PRICEv5Dv20D"
+        elif (abs(self.cpl - self.fd_vpoc) <= threshold) and (self.fd_vpoc > self.td_vpoc + threshold):
+            posture = "PRICE=5D^20D"
+        elif (self.cpl > self.fd_vpoc + threshold) and (abs(self.fd_vpoc - self.td_vpoc) <= threshold):
+            posture = "PRICE^5D=20D"
+        elif (self.cpl < self.fd_vpoc - threshold) and (abs(self.fd_vpoc - self.td_vpoc) <= threshold):
+            posture = "PRICEv5D=20D"
+        elif (abs(self.cpl - self.fd_vpoc) <= threshold) and (self.fd_vpoc < self.td_vpoc - threshold):
+            posture = "PRICE=5Dv20D"
+        elif (self.cpl > self.fd_vpoc + threshold) and (self.fd_vpoc < self.td_vpoc - threshold):
+            posture = "PRICE^5Dv20D"
+        elif (self.cpl < self.fd_vpoc - threshold) and (self.fd_vpoc > self.td_vpoc + threshold):
+            posture = "PRICEv5D^20D"
+        else:
+            posture = "Other"
+        return posture    
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
@@ -83,23 +140,20 @@ class TREV(Base):
         
         # Direction Based Logic
         if self.direction == "short":
-            self.atr_condition = abs(self.ib_low - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl < self.orl
+            self.several_dir_days = self.prior_low > self.prior_prior_high # Gap Between Sessions
+            self.vpoc_location = self.prior_vpoc > self.prior_low + 0.33 * (self.prior_high - self.prior_low)
+            self.ab_vwap = self.cpl < self.eth_vwap
         elif self.direction == "long":
-            self.atr_condition = abs(self.ib_high - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl > self.orh
-            
+            self.several_dir_days = self.prior_high < self.prior_prior_low
+            self.vpoc_location = self.prior_vpoc < self.prior_high - 0.33 * (self.prior_high - self.prior_low)
+            self.ab_vwap = self.cpl > self.eth_vwap
         # Driving Input
         logic = (
-            self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15) 
-            and
-            self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10) 
-            and
-            self.atr_condition 
-            and
-            abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1 
-            and
-            self.or_condition 
+            self.several_dir_days # Prior Two Sessions with 0 Overlap
+            and self.vpoc_location # Prior Session VPOC Location
+            and self.gap_tier == "Tier_1" # Open in Tier 1 Gap
+            and self.ab_vwap # Above / Below ETH VWAP
+            and self.posture() in ["PRICE^5D^20D","PRICEv5Dv20D","PRICEv5D^20D", "PRICE^5Dv20D"] # In Postural Extreme
             )    
         
         logger.debug(f" TREV | input | Product: {self.product_name} | LOGIC: {logic}")
@@ -115,11 +169,11 @@ class TREV(Base):
         
         # Define time windows based on product type
         if self.product_name == 'CL':
-            start_time = self.crude_pvat_start
+            start_time = self.crude_open
             end_time = self.crude_ib
             logger.debug(f" TREV | time_window | Product: {self.product_name} | Time Window: {start_time} - {end_time}")
         elif self.product_name in ['ES', 'RTY', 'NQ']:
-            start_time = self.equity_pvat_start
+            start_time = self.equity_open
             end_time = self.equity_ib
             logger.debug(f" TREV | time_window | Product: {self.product_name} | Time Window: {start_time} - {end_time}")
         else:
@@ -135,13 +189,16 @@ class TREV(Base):
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
-        
-        # Define Direction
-        self.direction = "short" if self.cpl > self.p_vpoc else "long"
-        self.color = "red" if self.direction == "short" else "green"
+    
+        if self.day_open > self.prior_high:
+            self.direction = "short"
+        elif self.day_open < self.prior_low:
+            self.direction = "long"
+        else:
+            return # Open In Range, So Not In Play
     
         # Driving Input
-        if self.input() and self.time_window():
+        if self.time_window() and self.input():
             
             with last_alerts_lock:
                 last_alert = last_alerts.get(self.product_name)   
@@ -150,42 +207,23 @@ class TREV(Base):
                 if self.direction != last_alert: 
                     logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Logic For c_within_atr 
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
-                    else:
-                        self.c_within_atr = "  "
+                    # Critical Criteria
+                    self.c_several_dir_days = "x"
+                    self.c_ab_vwap = "x"
+                    self.c_posture = "x" 
                     # Logic For c_orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
                         self.c_orderflow = "x"
                     elif self.direction == "long" and self.delta > 0:
                         self.c_orderflow = "x"
-                    # Logic for c_euro IB
-                    self.c_euro_ib = "  "
-                    if self.direction == "short" and self.cpl < self.euro_ibl:
-                        self.c_euro_ib = "x"
-                    elif self.direction == "long" and self.cpl > self.euro_ibh:
-                        self.c_euro_ib = "x"
-                    # Logic for c_or
-                    self.c_or = "  "
-                    if self.direction == "short" and self.cpl < self.orl:
-                        self.c_or = "x"
-                    elif self.direction == "long" and self.cpl > self.orh:
-                        self.c_or = "x"
-                    # Logic for c_between
-                    self.c_between = "  "
-                    if self.direction == "short" and self.p_vpoc < self.cpl < self.eth_vwap:
-                        self.c_between = "x"
-                    elif self.direction == "long" and self.eth_vwap < self.cpl < self.p_vpoc:
-                        self.c_between = "x"
-                    # Logic for c_align
-                    if abs(self.eth_vwap - self.p_vpoc) <= (self.exp_rng * 0.05):
-                        self.c_align = "x"
-                    else: 
-                        self.c_align = "  "
+                    # Logic for c_within_atr
+                    if abs(self.cpl - self.prior_vpoc) <= self.ib_atr:
+                        self.c_within_ibatr= "x"
+                    else:
+                        self.c_within_ibatr = "  "
                     # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_within_atr, self.c_orderflow, self.c_euro_ib, self.c_or, self.c_between, self.c_align] if condition == "x")   
+                    self.score = sum(1 for condition in [self.c_several_dir_days, self.c_ab_vwap, self.c_posture, self.c_orderflow, self.c_within_ibatr] if condition == "x")   
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -197,56 +235,47 @@ class TREV(Base):
             logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition Not Met")
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
-        
+
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
-        
         direction_settings = {
             "long": {
-                "pv_indicator": "^",
-                "c_euro_ib_text": "Above Euro IBH",
-                "c_or_text": "Above 30 Sec Opening Range High",
-                "emoji_indicator": "🔼",
-                "color_circle": "🔵"
+                "dir_indicator": "^",
+                "vwap": "Above"
             },
             "short": {
-                "pv_indicator": "v",
-                "c_euro_ib_text": "Below Euro IBL",
-                "c_or_text": "Below 30 Sec Opening Range Low",
-                "emoji_indicator": "🔽",
-                "color_circle": "🔴"
+                "dir_indicator": "v",
+                "vwap": "Below"
             }
         }
-
+ 
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" TREV | discord_message | Note: Invalid direction '{self.direction}'")
-        
-        # Title Construction with Emojis
-        title = f"{settings['color_circle']} **{self.product_name} - Playbook Alert** {settings['emoji_indicator']} **PVAT {settings['pv_indicator']}**"
+            raise ValueError(f" TREV | discord_message | Note: Invalid direction '{self.direction}'")     
 
+        # Title Construction with Emojis
+        title = f"**{self.product_name} - Playbook Alert** - **3REV {settings['dir_indicator']}**"
+    
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.p_vpoc} (Prior Session Vpoc)_\n"
-                f"**Risk**: _Wrong if auction fails to complete PVPOC test before IB, or accepts away from value_\n"
-                f"**Driving Input**: _Auction opening in range or slightly outside range, divergent from prior session Vpoc_\n"
+                f"**Destination**: {self.prior_vpoc} (PVPOC) \n"
+                f"**Risk**: Wrong if Auction Finds Acceptance Away from Prior Session Vpoc\n"
+                f"**Driving Input**: Several Day's of Sustained Direction and Participation is Waning. \n"
             ),
             color=self.get_color()
         )
-        embed.set_timestamp()  # Automatically sets the timestamp to current time
+        embed.set_timestamp()
 
         # Criteria Header
         embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
 
         # Criteria Details
         criteria = (
-            f"• **[{self.c_within_atr}]** Target Within ATR Of IB\n"
-            f"• **[{self.c_orderflow}]** Orderflow In Direction Of Target (_{self.delta}_) \n"
-            f"• **[{self.c_euro_ib}]** {settings['c_euro_ib_text']}\n"
-            f"• **[{self.c_or}]** {settings['c_or_text']}\n"
-            f"\n• **[{self.c_between}]** Between DVWAP and PVPOC\n"
-            f"Or\n"
-            f"• **[{self.c_align}]** DVWAP and PVPOC aligned\n"
+            f"• [{self.c_several_dir_days}] Several Days of Sustained Direction \n"
+            f"• [{self.c_posture}] Auction in Postural Extreme: ({self.posture()}) \n"
+            f"• [{self.c_orderflow}] Supportive Cumulative Delta ({self.delta}) \n"
+            f"• [{self.c_ab_vwap}] {settings['vwap']} ETH VWAP \n"
+            f"• [{self.c_within_ibatr}] Prior Vpoc Within ATR of IB \n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
@@ -256,8 +285,7 @@ class TREV(Base):
         # Alert Time and Price Context
         alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
         embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
-
-        return embed 
+        return embed
     
     def execute(self):
         embed = self.discord_message()
@@ -267,10 +295,10 @@ class TREV(Base):
             'date': datetime.now().strftime('%Y-%m-%d'),
             'time': datetime.now().strftime('%H:%M:%S'),
             'product': self.product_name,
-            'playbook': '#TREV',
+            'playbook': '#3REV',
             'direction': self.direction,
             'alert_price': self.cpl,
             'score': self.score,
-            'target': self.prior_mid,
+            'target': self.prior_vpoc,
         }
         log_alert_async(alert_details)
