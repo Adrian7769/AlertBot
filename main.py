@@ -15,20 +15,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import os
 
-#                Necessary Improvements for 11/18/24
+#                Necessary Improvements for 3/17/25
 # ------------------------------------------------------------ #
-# DOGW
-# TRCT
-# BSND 
-# HVNR
-# TRFD
-# TREV
-# STRC
-# IBGW
-# IBGP
-# XTFD
-# Add playbook logging (So we can see what is being sent to discord)
-
+# Optimization!
 # ------------------------------------------------------------ #
 
 def main():

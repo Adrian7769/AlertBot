@@ -10,6 +10,7 @@ import investpy
 import pandas as pd
 import os
 
+# Perhaps we could just pass to #BSND?
 # Configure logging if not already configured elsewhere
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ class Economic(Base):
 
             # Send the embed with the webhook
             if discord_webhook_url:
-                webhook = DiscordWebhook(url=discord_webhook_url, username=None, content=f"Economic Events for {today_str}")
+                webhook = DiscordWebhook(url=discord_webhook_url, username=None)
                 webhook.add_embed(embed)
                 response = webhook.execute()
                 if response.status_code == 200 or response.status_code == 204:
@@ -128,9 +129,9 @@ class Economic(Base):
         importance_emoji = importance_emojis.get(importance, ':grey_question:')
 
         if importance == 'High':
-            formatted_event = f">{importance_emoji}  *{event_time}* - *{event_name}*"
+            formatted_event = f"{importance_emoji}  **{event_time}** - {event_name}"
         else:
-            formatted_event = f">{importance_emoji}  *{event_time}* - *{event_name}*"
+            formatted_event = f"{importance_emoji}  **{event_time}** - {event_name}"
         
         logger.debug(f" ECON | format_event | Formatted Event: {formatted_event}")
         return formatted_event

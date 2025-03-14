@@ -213,15 +213,13 @@ class IB_Crude_Alert(Base):
                 embed = DiscordEmbed(
                     title=embed_title,
                     description=(
-                        f"**Open Type**: _{open_type}_\n"
-                        f"**{ib_type}**: _{ib_range}p_ = _{round(ib_vatr, 2)}%_ of Avg\n"
-                        f"**Vwap {vwap_type}**: _{vwap_slope*100}_\n"
+                        f"**Open Type**: {open_type} \n"
+                        f"**{ib_type}**: {ib_range}p = {round(ib_vatr, 2)}% of Avg\n"
+                        f"**Vwap {vwap_type}**: {vwap_slope*100} \n"
                     ),
                     color=self.get_color()
                 )
-                embed.set_timestamp()  # Automatically sets the timestamp to current time
-
-                # Add Gap Information if applicable
+                embed.set_timestamp()
                 if gap != 'No Gap':
                     embed.add_embed_field(name=f":warning: {gap}", value=f"_Size_: {gap_size} | _Tier_: {gap_tier}", inline=False)
                 

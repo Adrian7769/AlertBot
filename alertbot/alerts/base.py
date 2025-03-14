@@ -31,11 +31,11 @@ class Base:
             'QuickSheet': os.getenv("DISCORD_QUICKSHEET_WEBHOOK")
         }
         self.product_color = {
-            'ES': 0x0000FF,   
-            'NQ': 0x008000,  
-            'RTY': 0xFFA500,  
-            'CL': 0x800080,   
-            'QuickSheet': 0xFF0000,
+            'ES': "blue",   
+            'NQ': "green",  
+            'RTY': "orange",  
+            'CL': "purple",   
+            'QuickSheet': "black",
         }
         self.product_name = product_name
         self.variables = variables
@@ -108,4 +108,4 @@ class Base:
         else:
             logger.error(f"No Discord Webhook Configured for {self.product_name}")
     def get_color(self):
-        return self.product_color.get(self.product_name, 0x808080)     
+        return self.product_color.get(self.product_name, "black")     
