@@ -542,9 +542,9 @@ class XTFD(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: Depending on Entry, Developing VWAP/VPOC or {settings['destination']}\n"
-                f"**Risk**: Wrong if Auction goes neutral\n"
-                f"**Driving Input**: This trade seeks entry with the participants who extended the Initial Balance, either at the developing value or favorable to it.\n"
+                f"**Destination**: {self.day_vpoc} (DVPOC) \n"
+                f"**Risk**: Wrong if Price is Unable to Accept Inside IB\n"
+                f"**Driving Input**: IB Is Extended and Price is Divergent to Value \n"
             ),
             color=self.get_color()
         )
