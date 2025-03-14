@@ -16,8 +16,7 @@ class XTFD(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
         
-        # Variables (Round All Variables)
-        self.prior_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
+        # Variables (Round All Variables) 
         self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2)         
         self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
         self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
@@ -25,10 +24,6 @@ class XTFD(Base):
         self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
         self.day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
         self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)         
-        self.euro_ibh = round(self.variables.get(f'{self.product_name}_EURO_IBH'), 2)
-        self.euro_ibl = round(self.variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')        
         self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
         self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)

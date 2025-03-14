@@ -319,68 +319,42 @@ class Initialization(Base):
                                 case 'A':
                                     variables['ES_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
                                     variables['ES_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
-                                    variables['ES_A_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_A_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'B':
                                     variables['ES_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
                                     variables['ES_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
-                                    variables['ES_B_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_B_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                                   
                                 case 'C':
                                     variables['ES_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
                                     variables['ES_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
-                                    variables['ES_C_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_C_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'D':
                                     variables['ES_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
                                     variables['ES_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
-                                    variables['ES_D_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_D_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'E':
                                     variables['ES_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
                                     variables['ES_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
-                                    variables['ES_E_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_E_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'F':
                                     variables['ES_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
                                     variables['ES_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
-                                    variables['ES_F_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_F_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'G':
                                     variables['ES_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
                                     variables['ES_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
-                                    variables['ES_G_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_G_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'H':
                                     variables['ES_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
                                     variables['ES_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
-                                    variables['ES_H_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_H_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'I':
                                     variables['ES_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
                                     variables['ES_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
-                                    variables['ES_I_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_I_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'J':
                                     variables['ES_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
                                     variables['ES_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
-                                    variables['ES_J_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_J_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'K':
                                     variables['ES_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
                                     variables['ES_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
-                                    variables['ES_K_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_K_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                           
                                 case 'L':
                                     variables['ES_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
                                     variables['ES_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
-                                    variables['ES_L_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_L_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'M':
                                     variables['ES_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
                                     variables['ES_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
-                                    variables['ES_M_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['ES_M_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                         else:
                             pass
                     # ---- Prior Session ---- #
@@ -565,68 +539,42 @@ class Initialization(Base):
                                 case 'A':
                                     variables['NQ_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
                                     variables['NQ_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
-                                    variables['NQ_A_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_A_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'B':
                                     variables['NQ_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
                                     variables['NQ_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
-                                    variables['NQ_B_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_B_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                                   
                                 case 'C':
                                     variables['NQ_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
                                     variables['NQ_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
-                                    variables['NQ_C_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_C_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'D':
                                     variables['NQ_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
                                     variables['NQ_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
-                                    variables['NQ_D_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_D_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'E':
                                     variables['NQ_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
                                     variables['NQ_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
-                                    variables['NQ_E_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_E_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'F':
                                     variables['NQ_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
                                     variables['NQ_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
-                                    variables['NQ_F_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_F_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'G':
                                     variables['NQ_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
                                     variables['NQ_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
-                                    variables['NQ_G_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_G_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'H':
                                     variables['NQ_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
                                     variables['NQ_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
-                                    variables['NQ_H_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_H_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'I':
                                     variables['NQ_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
                                     variables['NQ_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
-                                    variables['NQ_I_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_I_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'J':
                                     variables['NQ_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
                                     variables['NQ_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
-                                    variables['NQ_J_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_J_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'K':
                                     variables['NQ_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
                                     variables['NQ_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
-                                    variables['NQ_K_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_K_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                           
                                 case 'L':
                                     variables['NQ_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
                                     variables['NQ_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
-                                    variables['NQ_L_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_L_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'M':
                                     variables['NQ_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
                                     variables['NQ_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
-                                    variables['NQ_M_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['NQ_M_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                         else:
                             pass
                     # ---- Prior Session ---- #
@@ -810,68 +758,42 @@ class Initialization(Base):
                                 case 'A':
                                     variables['RTY_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
                                     variables['RTY_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
-                                    variables['RTY_A_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_A_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'B':
                                     variables['RTY_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
                                     variables['RTY_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
-                                    variables['RTY_B_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_B_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                                   
                                 case 'C':
                                     variables['RTY_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
                                     variables['RTY_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
-                                    variables['RTY_C_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_C_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'D':
                                     variables['RTY_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
                                     variables['RTY_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
-                                    variables['RTY_D_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_D_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'E':
                                     variables['RTY_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
                                     variables['RTY_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
-                                    variables['RTY_E_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_E_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'F':
                                     variables['RTY_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
                                     variables['RTY_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
-                                    variables['RTY_F_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_F_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'G':
                                     variables['RTY_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
                                     variables['RTY_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
-                                    variables['RTY_G_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_G_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                                 case 'H':
                                     variables['RTY_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
                                     variables['RTY_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
-                                    variables['RTY_H_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_H_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'I':
                                     variables['RTY_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
                                     variables['RTY_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
-                                    variables['RTY_I_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_I_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'J':
                                     variables['RTY_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
                                     variables['RTY_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
-                                    variables['RTY_J_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_J_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'K':
                                     variables['RTY_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
                                     variables['RTY_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
-                                    variables['RTY_K_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_K_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                           
                                 case 'L':
                                     variables['RTY_L_HIGH'] = float(data.loc[specific_datetime]['[ID21.SG1] L_High'])
                                     variables['RTY_L_LOW'] = float(data.loc[specific_datetime]['[ID21.SG2] L_Low'])
-                                    variables['RTY_L_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_L_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])                            
                                 case 'M':
                                     variables['RTY_M_HIGH'] = float(data.loc[specific_datetime]['[ID22.SG1] M_High'])
                                     variables['RTY_M_LOW'] = float(data.loc[specific_datetime]['[ID22.SG2] M_Low'])
-                                    variables['RTY_M_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID25.SG1] HOD_VWAP'])
-                                    variables['RTY_M_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID26.SG1] LOD_VWAP'])
                         else:
                             pass
                     # ---- Prior Session ---- #
@@ -1055,58 +977,36 @@ class Initialization(Base):
                                 case 'A':
                                     variables['CL_A_HIGH'] = float(data.loc[specific_datetime]['[ID10.SG1] A_High'])
                                     variables['CL_A_LOW'] = float(data.loc[specific_datetime]['[ID10.SG2] A_Low'])    
-                                    variables['CL_A_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_A_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])
                                 case 'B':
                                     variables['CL_B_HIGH'] = float(data.loc[specific_datetime]['[ID11.SG1] B_High'])
                                     variables['CL_B_LOW'] = float(data.loc[specific_datetime]['[ID11.SG2] B_Low'])
-                                    variables['CL_B_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_B_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'C':
                                     variables['CL_C_HIGH'] = float(data.loc[specific_datetime]['[ID12.SG1] C_High'])
                                     variables['CL_C_LOW'] = float(data.loc[specific_datetime]['[ID12.SG2] C_Low'])
-                                    variables['CL_C_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_C_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'D':
                                     variables['CL_D_HIGH'] = float(data.loc[specific_datetime]['[ID13.SG1] D_High'])
                                     variables['CL_D_LOW'] = float(data.loc[specific_datetime]['[ID13.SG2] D_Low'])
-                                    variables['CL_D_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_D_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'E':
                                     variables['CL_E_HIGH'] = float(data.loc[specific_datetime]['[ID14.SG1] E_High'])
                                     variables['CL_E_LOW'] = float(data.loc[specific_datetime]['[ID14.SG2] E_Low'])
-                                    variables['CL_E_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_E_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'F':
                                     variables['CL_F_HIGH'] = float(data.loc[specific_datetime]['[ID15.SG1] F_High'])
                                     variables['CL_F_LOW'] = float(data.loc[specific_datetime]['[ID15.SG2] F_Low'])
-                                    variables['CL_F_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_F_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'G':
                                     variables['CL_G_HIGH'] = float(data.loc[specific_datetime]['[ID16.SG1] G_High'])
                                     variables['CL_G_LOW'] = float(data.loc[specific_datetime]['[ID16.SG2] G_Low'])
-                                    variables['CL_G_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_G_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'H':
                                     variables['CL_H_HIGH'] = float(data.loc[specific_datetime]['[ID17.SG1] H_High'])
                                     variables['CL_H_LOW'] = float(data.loc[specific_datetime]['[ID17.SG2] H_Low'])
-                                    variables['CL_H_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_H_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'I':
                                     variables['CL_I_HIGH'] = float(data.loc[specific_datetime]['[ID18.SG1] I_High'])
                                     variables['CL_I_LOW'] = float(data.loc[specific_datetime]['[ID18.SG2] I_Low'])
-                                    variables['CL_I_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_I_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'J':
                                     variables['CL_J_HIGH'] = float(data.loc[specific_datetime]['[ID19.SG1] J_High'])
                                     variables['CL_J_LOW'] = float(data.loc[specific_datetime]['[ID19.SG2] J_Low'])
-                                    variables['CL_J_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_J_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                                 case 'K':
                                     variables['CL_K_HIGH'] = float(data.loc[specific_datetime]['[ID20.SG1] K_High'])
                                     variables['CL_K_LOW'] = float(data.loc[specific_datetime]['[ID20.SG2] K_Low'])
-                                    variables['CL_K_HOD_VWAP'] = float(data.loc[specific_datetime]['[ID23.SG1] HOD_VWAP'])
-                                    variables['CL_K_LOD_VWAP'] = float(data.loc[specific_datetime]['[ID24.SG1] LOD_VWAP'])                                    
                         else:
                             pass
                     # ---- Prior Session ---- #

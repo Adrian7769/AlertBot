@@ -236,7 +236,7 @@ conditions = [
     
     {
         "name": "XTFD_ES",
-        "required_files": [],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -244,7 +244,7 @@ conditions = [
     },
     {
         "name": "XTFD_NQ",
-        "required_files": [],
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -252,7 +252,7 @@ conditions = [
     },
     {
         "name": "XTFD_RTY",
-        "required_files": [],
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -260,7 +260,7 @@ conditions = [
     },
     {
         "name": "XTFD_CL",
-        "required_files": [],
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },      
@@ -276,6 +276,7 @@ condition_functions = {
     "IBGW": IBGW,
     "IBGP": IBGP,
     "XTFD": XTFD,
+    "STRC": STRC,
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
