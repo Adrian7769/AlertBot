@@ -5,7 +5,6 @@ from datetime import datetime
 from alertbot.utils import config
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from alertbot.alerts.base import Base
-from alertbot.source.alert_logger import log_alert_async
 logger = logging.getLogger(__name__)
 
 last_alerts = {}

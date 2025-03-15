@@ -7,7 +7,6 @@ from discord_webhook import DiscordEmbed
 from alertbot.alerts.base import Base
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
-from alertbot.source.alert_logger import log_alert_async
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
