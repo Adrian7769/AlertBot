@@ -7,10 +7,10 @@ from alertbot.alerts.conditional.playbook.bsnd import BSND # GG
 from alertbot.alerts.conditional.playbook.hvnr import HVNR # GG
 from alertbot.alerts.conditional.playbook.Ibgp import IBGP 
 from alertbot.alerts.conditional.playbook.Ibgw import IBGW
-from alertbot.alerts.conditional.playbook.strc import STRC # Interesting...
+from alertbot.alerts.conditional.playbook.strc import STRC # Final boss
 from alertbot.alerts.conditional.playbook.trct import TRCT
-from alertbot.alerts.conditional.playbook.trev import TREV # (More Data)
-from alertbot.alerts.conditional.playbook.xtfd import XTFD # OK
+from alertbot.alerts.conditional.playbook.trev import TREV
+from alertbot.alerts.conditional.playbook.xtfd import XTFD
 # ---------------------- Contextual ------------------------- #
 from alertbot.alerts.conditional.contextual.neutral import NEUTRAL
 from alertbot.alerts.conditional.contextual.pre_ib import PRE_IB_BIAS

@@ -463,14 +463,3 @@ class IBGP(Base):
         embed = self.discord_message()
         self.send_playbook_embed(embed, username=None, avatar_url=None)
         logger.info(f"IBGP | execute | Product: {self.product_name} | Note: Alert Sent To Playbook Webhook")
-        alert_details = {
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'time': datetime.now().strftime('%H:%M:%S'),
-            'product': self.product_name,
-            'playbook': '#IBGP',
-            'direction': self.direction,
-            'alert_price': self.cpl,
-            'score': self.score,
-            'target': None,
-        }
-        log_alert_async(alert_details)
