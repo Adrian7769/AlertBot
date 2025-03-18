@@ -311,6 +311,7 @@ conditions = [
         "start_time": datetime_time(9, 0),
         "end_time": datetime_time(10, 0),
     },              
+    
 ]
 
 condition_functions = {
@@ -324,7 +325,7 @@ condition_functions = {
     "IBGP": IBGP,
     "XTFD": XTFD,
     "TREV": TREV,
-    "STRC": HVNR
+    "HVNR": HVNR
 }
 es_1 = [
     '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 

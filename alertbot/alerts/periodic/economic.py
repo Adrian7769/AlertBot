@@ -11,13 +11,10 @@ import pandas as pd
 import os
 
 # Perhaps we could just pass to #BSND?
-# Configure logging if not already configured elsewhere
 logger = logging.getLogger(__name__)
-
 class Economic(Base):
     def __init__(self, files):
         super().__init__(files=files)
-
     def send_alert(self):
         today = datetime.now()
         today_str = today.strftime('%m/%d/%Y')
@@ -81,8 +78,7 @@ class Economic(Base):
             formatted_events = ["No significant events today."]
             logger.debug(" ECON | send_alert | No events found. Using default message.")
 
-        discord_webhook_url = os.getenv('DISCORD_ECON_WEBHOOK')  # Adjust as per your Base class
-
+        discord_webhook_url = os.getenv('DISCORD_ECON_WEBHOOK') 
         events_text = "\n".join(formatted_events)
         logger.debug(f" ECON | send_alert | Events text prepared for Discord.")
 
@@ -95,7 +91,6 @@ class Economic(Base):
                 color=self.get_color()  
             )
             embed.set_timestamp()  
-
             embed.add_embed_field(name=":information_source: Note", value="`Control Risk and Trade Well!`", inline=False)
 
             # Send the embed with the webhook
@@ -113,25 +108,19 @@ class Economic(Base):
             logger.error(f" ECON | send_alert | Error sending Discord message: {e}")
                 
     def format_event(self, row):
-        
         event_time = row.get('time', 'N/A')
         event_name = row.get('event', 'N/A')
         importance = row.get('importance', 'N/A').capitalize()
-
         logger.debug(f" ECON | format_event | Event Time: {event_time}, Event Name: {event_name}, Importance: {importance}")
-
         importance_emojis = {
             'High': ':red_circle:',
             'Medium': ':large_orange_diamond:',
             'Low': ':white_circle:'
         }
-        
         importance_emoji = importance_emojis.get(importance, ':grey_question:')
-
         if importance == 'High':
             formatted_event = f"{importance_emoji}  **{event_time}** - {event_name}"
         else:
             formatted_event = f"{importance_emoji}  **{event_time}** - {event_name}"
-        
         logger.debug(f" ECON | format_event | Formatted Event: {formatted_event}")
         return formatted_event
