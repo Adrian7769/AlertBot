@@ -35,7 +35,9 @@ class IBGP(Base):
         self.a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
         self.b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
         self.b_low = round(variables.get(f'{product_name}_B_LOW'), 2) 
-        self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')    
+        self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE') 
+        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
+        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)           
         self.overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
         self.overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)          
         self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2)                 
@@ -347,7 +349,7 @@ class IBGP(Base):
                         else:
                             self.c_euro_ib = "  "                     
                     # Logic DVPOC is in middle of IB Range
-                    if self.ib_low + round(0.25(self.ib_high - self.ib_low), 2) <= self.day_vpoc <= self.ib_high - round(0.25(self.ib_high - self.ib_low), 2):
+                    if self.ib_low + round(0.25 * (self.ib_high - self.ib_low), 2) <= self.day_vpoc <= self.ib_high - round( 0.25 * (self.ib_high - self.ib_low), 2):
                         self.c_vpoc_in_middle = "x" 
                     else:
                         self.c_vpoc_in_middle = "  "

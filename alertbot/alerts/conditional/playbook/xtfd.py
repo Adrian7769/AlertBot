@@ -6,6 +6,7 @@ from alertbot.utils import config
 from discord_webhook import DiscordEmbed
 from alertbot.alerts.base import Base
 from zoneinfo import ZoneInfo
+
 logger = logging.getLogger(__name__)
 
 last_alerts = {}
@@ -15,30 +16,31 @@ class XTFD(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
         
-        # Variables (Round All Variables) 
-        self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2)         
-        self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-        self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
-        self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)         
-        self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')        
-        self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
-        self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
-        self.prior_ibh = round(self.variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
-        self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)         
-        self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-        self.top_one_eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_TOP_1'))
-        self.bottom_one_eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_BOTTOM_1'))
-        self.a_high = round(variables.get(f'{product_name}_A_HIGH'), 2)
-        self.a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
-        self.b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
-        self.b_low = round(variables.get(f'{product_name}_B_LOW'), 2)        
-        self.overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
-        self.overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)        
-        self.ib_high = round(self.variables.get(f'{product_name}_IB_HIGH'), 2)
-        self.ib_low = round(self.variables.get(f'{product_name}_IB_LOW'), 2)
+        self.day_vpoc = self.safe_round(variables.get(f'{product_name}_DAY_VPOC'))
+        self.day_open = self.safe_round(variables.get(f'{self.product_name}_DAY_OPEN'))
+        self.prior_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_HIGH'))
+        self.prior_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_LOW'))
+        self.ib_atr = self.safe_round(variables.get(f'{self.product_name}_IB_ATR'))
+        self.day_high = self.safe_round(variables.get(f'{product_name}_DAY_HIGH'))
+        self.day_low = self.safe_round(variables.get(f'{product_name}_DAY_LOW'))
+        self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')
+        self.eth_vwap = variables.get(f'{self.product_name}_ETH_VWAP')
+        self.cpl = self.safe_round(variables.get(f'{self.product_name}_CPL'))
+        self.prior_ibh = self.safe_round(variables.get(f'{self.product_name}_PRIOR_IB_HIGH'))
+        self.prior_ibl = self.safe_round(variables.get(f'{self.product_name}_PRIOR_IB_LOW'))
+        self.prior_close = self.safe_round(variables.get(f'{self.product_name}_PRIOR_CLOSE'))
+        self.top_one_eth_vwap = variables.get(f'{self.product_name}_ETH_TOP_1')
+        self.bottom_one_eth_vwap = variables.get(f'{self.product_name}_ETH_BOTTOM_1')
+        self.a_high = self.safe_round(variables.get(f'{product_name}_A_HIGH'))
+        self.a_low = self.safe_round(variables.get(f'{product_name}_A_LOW'))
+        self.b_high = self.safe_round(variables.get(f'{product_name}_B_HIGH'))
+        self.b_low = self.safe_round(variables.get(f'{product_name}_B_LOW'))
+        self.overnight_high = self.safe_round(variables.get(f'{product_name}_OVNH'))
+        self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL'))
+        self.ib_high = self.safe_round(variables.get(f'{product_name}_IB_HIGH'))
+        self.ib_low = self.safe_round(variables.get(f'{product_name}_IB_LOW'))
+        self.orh = self.safe_round(variables.get(f'{self.product_name}_ORH'))
+        self.orl = self.safe_round(variables.get(f'{self.product_name}_ORL'))
         
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
@@ -46,10 +48,23 @@ class XTFD(Base):
         self.cl_impvol = config.cl_impvol 
         
         self.exp_rng = self.exp_range() 
-
-# ---------------------------------- Specific Calculations ------------------------------------ #   
+        
+    def safe_round(self, value, digits=2):
+        """
+        Safely rounds a value if it is not None.
+        Returns 0 if the value is None.
+        """
+        if value is None:
+            logger.error("XTFD: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"XTFD: Error rounding value {value}: {e}")
+            return 0
+    
     def open_type(self):
-        a_period_mid = round(((self.a_high + self.a_low) / 2), 2)
+        a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
         overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
         total_range = self.day_high - self.day_low
         if self.day_open == self.a_high and (self.b_high < a_period_mid):
@@ -73,67 +88,67 @@ class XTFD(Base):
         else:
             open_type = "Other"
         return open_type 
+    
     def prior_day(self):
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
             day_type = "Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high > self.prior_ibh and 
-            self.prior_close >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_close >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high > self.prior_ibh and 
-            self.prior_close <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_close <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low < self.prior_ibl and
-            self.prior_close >= (self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)) and
-            self.prior_close <= (self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl))):
+              self.prior_close >= (self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)) and
+              self.prior_close <= (self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl))):
             day_type = "Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and 
-            self.prior_high <= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_high <= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and 
-            self.prior_low >= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_low >= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-            self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-            self.prior_close >= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+              self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+              self.prior_close >= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-            self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-            self.prior_high >= self.prior_ibh + 1.25 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+              self.prior_high >= self.prior_ibh + 1.25 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and
-            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
-            self.prior_close <= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):
+              self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
+              self.prior_close <= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and
-            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
-            self.prior_low <= self.prior_ibl - 1.25 * (self.prior_ibh - self.prior_ibl)):
+              self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
+              self.prior_low <= self.prior_ibl - 1.25 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-            self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
-            self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+              self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
+              self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
             day_type = "Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-            self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-            self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+              self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+              self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
-            self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
-            self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
+              self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and
+              self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):  # LOW IS ABOVE 2x IB
             day_type = "Rotational"
-        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
-            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
-            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
+        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
+              self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
+              self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):  # CLOSE IS WITHIN 2x IB
             day_type = "Directional"
         else:
             day_type = "Other"
-        logger.debug(f" TRCT | prior_day | Prior Day Type: {day_type}")
+        logger.debug(f"TRCT | prior_day | Prior Day Type: {day_type}")
         return day_type    
+    
     def exp_range(self):
-
-        # Calculation (product specific or Not)
         if not self.prior_close:
-            logger.error(f" XTFD | exp_range | Product: {self.product_name} | Note: No Close Found")
-            raise ValueError(f" XTFD | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
+            logger.error(f"XTFD | exp_range | Product: {self.product_name} | Note: No Close Found")
+            raise ValueError(f"XTFD | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
         
         impvol = {
             'ES': self.es_impvol,
@@ -145,27 +160,13 @@ class XTFD(Base):
         if impvol is None:
             raise ValueError(f"XTFD | exp_range | Product: {self.product_name} | Note: Unknown Product")
 
-        exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
-
-        logger.debug(f" XTFD | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
+        exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
+        logger.debug(f"XTFD | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
         return exp_range
+    
     def vwap_touch(self):
-        """
-        Check for no VWAP touch after IB extension.
-        
-        This method:
-        1. Calculates finished periods based on product and current time.
-        2. Determines the extension index (IBH for long, IBL for short).
-        3. Checks that no period after the extension touches VWAP:
-        - For LONG: No period's low is <= its VWAP.
-        - For SHORT: No period's high is >= its VWAP.
-        
-        Returns:
-            True if no VWAP touch is detected after the extension, False otherwise.
-        """
-        logger.debug(f" XTFD | Checking VWAP touch for direction {self.direction}")
+        logger.debug(f"XTFD | Checking VWAP touch for direction {self.direction}")
 
-        # Determine period times based on product.
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -185,44 +186,42 @@ class XTFD(Base):
         now = datetime.now(ZoneInfo('America/New_York')).time()
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
-        logger.debug(f" XTFD | Finished Periods: {finished_periods}")
+        logger.debug(f"XTFD | Finished Periods: {finished_periods}")
 
         if not finished_periods:
-            logger.debug(" XTFD | No finished periods. Returning False.")
+            logger.debug("XTFD | No finished periods. Returning False.")
             return False
 
-        # Determine the extension index (ext_index) based on direction.
         ext_index = None
         if self.direction == "long":
             for i, period in enumerate(finished_periods):
                 p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
                 if p_high is None:
-                    logger.debug(f" XTFD | Period {period} missing HIGH. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing HIGH. Skipping.")
                     continue
-                if round(p_high, 2) > self.ib_high:
+                if self.safe_round(p_high) > self.ib_high:
                     ext_index = i
-                    logger.debug(f" XTFD | Found IBH extension at period {period}, index={i}, p_high={p_high}.")
+                    logger.debug(f"XTFD | Found IBH extension at period {period}, index={i}, p_high={p_high}.")
                     break
             if ext_index is None:
-                logger.debug(" XTFD | No IBH extension found. Returning False.")
+                logger.debug("XTFD | No IBH extension found. Returning False.")
                 return False
 
-            # Check VWAP touches for LONG.
             for i in range(ext_index + 1, len(finished_periods)):
                 period = finished_periods[i]
                 p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
                 if p_low is None:
-                    logger.debug(f" XTFD | Period {period} missing LOW. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing LOW. Skipping.")
                     continue
-                p_low = round(p_low, 2)
+                p_low = self.safe_round(p_low)
                 vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
                 period_vwap = self.variables.get(vwap_var)
                 if period_vwap is None:
-                    logger.debug(f" XTFD | Period {period} missing VWAP. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing VWAP. Skipping.")
                     continue
-                period_vwap = round(period_vwap, 2)
+                period_vwap = self.safe_round(period_vwap)
                 if p_low <= period_vwap:
-                    logger.debug(f" XTFD | Period {period} low({p_low}) <= VWAP({period_vwap}). VWAP touch detected.")
+                    logger.debug(f"XTFD | Period {period} low({p_low}) <= VWAP({period_vwap}). VWAP touch detected.")
                     return False
             return True
 
@@ -230,48 +229,39 @@ class XTFD(Base):
             for i, period in enumerate(finished_periods):
                 p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
                 if p_low is None:
-                    logger.debug(f" XTFD | Period {period} missing LOW. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing LOW. Skipping.")
                     continue
-                if round(p_low, 2) < self.ib_low:
+                if self.safe_round(p_low) < self.ib_low:
                     ext_index = i
-                    logger.debug(f" XTFD | Found IBL extension at period {period}, index={i}, p_low={p_low}.")
+                    logger.debug(f"XTFD | Found IBL extension at period {period}, index={i}, p_low={p_low}.")
                     break
             if ext_index is None:
-                logger.debug(" XTFD | No IBL extension found. Returning False.")
+                logger.debug("XTFD | No IBL extension found. Returning False.")
                 return False
 
-            # Check VWAP touches for SHORT.
             for i in range(ext_index + 1, len(finished_periods)):
                 period = finished_periods[i]
                 p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
                 if p_high is None:
-                    logger.debug(f" XTFD | Period {period} missing HIGH. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing HIGH. Skipping.")
                     continue
-                p_high = round(p_high, 2)
+                p_high = self.safe_round(p_high)
                 vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
                 period_vwap = self.variables.get(vwap_var)
                 if period_vwap is None:
-                    logger.debug(f" XTFD | Period {period} missing VWAP. Skipping.")
+                    logger.debug(f"XTFD | Period {period} missing VWAP. Skipping.")
                     continue
-                period_vwap = round(period_vwap, 2)
+                period_vwap = self.safe_round(period_vwap)
                 if p_high >= period_vwap:
-                    logger.debug(f" XTFD | Period {period} high({p_high}) >= VWAP({period_vwap}). VWAP touch detected.")
+                    logger.debug(f"XTFD | Period {period} high({p_high}) >= VWAP({period_vwap}). VWAP touch detected.")
                     return False
             return True
 
         else:
-            logger.debug(" XTFD | Invalid direction specified.")
+            logger.debug("XTFD | Invalid direction specified.")
             return False
     
     def one_time_framing(self):
-        """
-        Determines one-time framing conditions based on the last two finished periods.
-        Extensive logging is provided to trace computation values.
-        
-        Returns:
-            True if one-time framing condition is met, False otherwise.
-        """
-        # Define period times based on the product.
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -290,11 +280,9 @@ class XTFD(Base):
             }
             logger.debug("one_time_framing | Using non-CL period times.")
         
-        # Get the current time based on the established timezone.
         now = datetime.now(self.est).time()
         logger.debug(f"one_time_framing | Current time: {now}")
         
-        # Sort periods and filter out the finished ones.
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
         logger.debug(f"one_time_framing | Finished periods: {finished_periods}")
@@ -303,36 +291,30 @@ class XTFD(Base):
             logger.debug("one_time_framing | Not enough finished periods. Returning False.")
             return False
         
-        # Consider the last two finished periods.
         last_two = finished_periods[-2:]
         period1, period2 = last_two[0], last_two[1]
         logger.debug(f"one_time_framing | Last two periods selected: {period1}, {period2}")
         
-        # Retrieve high and low values for both periods.
         p1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
         p1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
         p2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
         p2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
         logger.debug(f"one_time_framing | Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
         
-        # If any value is missing, the check fails.
         if None in (p1_high, p1_low, p2_high, p2_low):
             logger.debug("one_time_framing | One or more period values missing. Returning False.")
             return False
         
-        # Round the values to two decimals.
-        p1_high = round(p1_high, 2)
-        p1_low = round(p1_low, 2)
-        p2_high = round(p2_high, 2)
-        p2_low = round(p2_low, 2)
+        p1_high = self.safe_round(p1_high)
+        p1_low = self.safe_round(p1_low)
+        p2_high = self.safe_round(p2_high)
+        p2_low = self.safe_round(p2_low)
         logger.debug(f"one_time_framing | Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
         
-        # Get the current day's high and low.
         current_high = self.day_high
         current_low = self.day_low
         logger.debug(f"one_time_framing | Current day's HIGH={current_high}, LOW={current_low}")
         
-        # Evaluate the one-time framing conditions based on direction.
         if self.direction == "long":
             logger.debug("one_time_framing | Evaluating conditions for LONG direction.")
             if p2_high > p1_high and p2_low > p1_low:
@@ -363,7 +345,7 @@ class XTFD(Base):
         else:
             logger.debug("one_time_framing | Invalid direction specified. Returning False.")
             return False
-         
+
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)

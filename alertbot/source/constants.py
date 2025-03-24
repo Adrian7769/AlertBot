@@ -287,31 +287,6 @@ conditions = [
         "end_time": datetime_time(10, 0),
     },
     
-    {
-        "name": "HVNR_ES",
-        "required_files": [],
-        "start_time": datetime_time(9, 30),
-        "end_time": datetime_time(10, 30),
-    },
-    {
-        "name": "HVNR_NQ",
-        "required_files": [],
-        "start_time": datetime_time(9, 30),
-        "end_time": datetime_time(10, 30),
-    },
-    {
-        "name": "HVNR_RTY",
-        "required_files": [],
-        "start_time": datetime_time(9, 30),
-        "end_time": datetime_time(10, 30),
-    },
-    {
-        "name": "HVNR_CL",
-        "required_files": [],
-        "start_time": datetime_time(9, 0),
-        "end_time": datetime_time(10, 0),
-    },              
-    
 ]
 
 condition_functions = {
@@ -325,10 +300,9 @@ condition_functions = {
     "IBGP": IBGP,
     "XTFD": XTFD,
     "TREV": TREV,
-    "HVNR": HVNR
 }
 es_1 = [
-    '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
+    '[ID24.SG1] RTH_VWAP', '[ID23.SG2] Vwap_Slope', '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
     '[ID2.SG4] Day_Close', '[ID1.SG1] Day_Vpoc', '[ID9.SG1] Prior_Vpoc', '[ID8.SG2] Prior_High', '[ID8.SG3] Prior_Low', '[ID8.SG4] Prior_Close',
     '[ID6.SG1] R_Vol', '[ID6.SG2] R_Vol_Cumulative', '[ID4.SG4] Total_Delta', 
     '[ID3.SG1] IB ATR','[ID10.SG1] A_High','[ID10.SG2] A_Low', '[ID11.SG1] B_High','[ID11.SG2] B_Low',
@@ -365,7 +339,7 @@ es_7 = [
     '[ID1.SG2] ORH','[ID1.SG3] ORL',
 ]
 nq_1 = [
-    '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
+    '[ID24.SG1] RTH_VWAP', '[ID23.SG2] Vwap_Slope', '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
     '[ID2.SG4] Day_Close', '[ID1.SG1] Day_Vpoc', '[ID9.SG1] Prior_Vpoc', '[ID8.SG2] Prior_High', '[ID8.SG3] Prior_Low', '[ID8.SG4] Prior_Close',
     '[ID6.SG1] R_Vol', '[ID6.SG2] R_Vol_Cumulative', '[ID4.SG4] Total_Delta', 
     '[ID3.SG1] IB ATR','[ID10.SG1] A_High','[ID10.SG2] A_Low', '[ID11.SG1] B_High','[ID11.SG2] B_Low',
@@ -402,7 +376,7 @@ nq_7 = [
     '[ID1.SG2] ORH','[ID1.SG3] ORL',
 ]
 rty_1 = [
-    '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
+    '[ID24.SG1] RTH_VWAP', '[ID23.SG2] Vwap_Slope', '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
     '[ID2.SG4] Day_Close', '[ID1.SG1] Day_Vpoc', '[ID9.SG1] Prior_Vpoc', '[ID8.SG2] Prior_High', '[ID8.SG3] Prior_Low', '[ID8.SG4] Prior_Close',
     '[ID6.SG1] R_Vol', '[ID6.SG2] R_Vol_Cumulative', '[ID4.SG4] Total_Delta', 
     '[ID3.SG1] IB ATR','[ID10.SG1] A_High','[ID10.SG2] A_Low', '[ID11.SG1] B_High','[ID11.SG2] B_Low',
@@ -439,7 +413,7 @@ rty_7 = [
     '[ID1.SG2] ORH','[ID1.SG3] ORL',
 ]
 cl_1 = [
-    '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
+    '[ID22.SG1] RTH_VWAP', '[ID21.SG2] Vwap_Slope', '[ID2.SG1] Day_Open', '[ID2.SG2] Day_High', '[ID2.SG3] Day_Low', 
     '[ID2.SG4] Day_Close', '[ID1.SG1] Day_Vpoc', '[ID9.SG1] Prior_Vpoc', '[ID8.SG2] Prior_High', '[ID8.SG3] Prior_Low', '[ID8.SG4] Prior_Close',
     '[ID6.SG1] R_Vol', '[ID6.SG2] R_Vol_Cumulative', '[ID4.SG4] Total_Delta', 
     '[ID3.SG1] IB ATR','[ID10.SG1] A_High','[ID10.SG2] A_Low', '[ID11.SG1] B_High','[ID11.SG2] B_Low',

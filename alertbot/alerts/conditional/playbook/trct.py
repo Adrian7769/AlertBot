@@ -188,8 +188,8 @@ class TRCT(Base):
                     prior_low = period_low
 
             # 3) Day_VPOC must be greater than IB_high.
-            condition3 = self.p_vpoc > self.ib_high
-            logger.debug(f"trend_day | (Long) Condition3: p_vpoc({self.p_vpoc}) > ib_high({self.ib_high}) => {condition3}")
+            condition3 = self.day_vpoc > self.ib_high
+            logger.debug(f"trend_day | (Long) Condition3: day_vpoc({self.day_vpoc}) > ib_high({self.ib_high}) => {condition3}")
 
             # 4) Prior session must be rotational.
             prior_day_type = self.prior_day()
@@ -293,7 +293,7 @@ class TRCT(Base):
 
             # 3) Day_VPOC must be less than IB_low.
             condition3 = self.day_vpoc < self.ib_low
-            logger.debug(f"trend_day | (Short) Condition3: p_vpoc({self.p_vpoc}) < ib_low({self.ib_low}) => {condition3}")
+            logger.debug(f"trend_day | (Short) Condition3: day_vpoc({self.day_vpoc}) < ib_low({self.ib_low}) => {condition3}")
 
             # 4) Prior session must be rotational.
             prior_day_type = self.prior_day()
@@ -373,7 +373,7 @@ class TRCT(Base):
             logger.debug(f"trend_day | No valid direction detected (direction={self.direction}). Returning False.")
             return False
 
-    def float_range(start, stop, step):
+    def float_range(self, start, stop, step):
         """
         Yields a sequence of floating-point numbers from `start` up to `stop`
         (inclusive), stepping by `step`. 

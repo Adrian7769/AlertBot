@@ -33,6 +33,8 @@ class IBGW(Base):
         self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)             
         self.a_high = round(variables.get(f'{product_name}_A_HIGH'), 2)
         self.a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
+        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
+        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)        
         self.b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
         self.b_low = round(variables.get(f'{product_name}_B_LOW'), 2) 
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')  
@@ -123,9 +125,9 @@ class IBGW(Base):
             open_type = "ORR v"
         elif overlap >= 0.5 * total_range:
             open_type = "OAIR"
-        elif (overlap < 0.5 * total_range) and (self.day_open >= self.p_high):
+        elif (overlap < 0.5 * total_range) and (self.day_open >= self.prior_high):
             open_type = "OAOR ^"
-        elif (overlap < 0.5 * total_range) and (self.day_open <= self.p_low):
+        elif (overlap < 0.5 * total_range) and (self.day_open <= self.prior_low):
             open_type = "OAOR v"
         else:
             open_type = "Other"
@@ -377,12 +379,12 @@ class IBGW(Base):
                             self.c_euro_ib = "  "                     
                     # Logic for skew in profile towards IB extreme
                     if self.direction == "short": 
-                        if self.day_vpoc <= self.ib_low + round(0.33(self.ib_high - self.ib_low), 2):
+                        if self.day_vpoc <= self.ib_low + round(0.33 * (self.ib_high - self.ib_low), 2):
                             self.c_skew = "x" 
                         else:
                             self.c_skew = "  "
                     elif self.direction == "long":
-                        if self.day_vpoc >= self.ib_high - round(0.33(self.ib_high - self.ib_low), 2):
+                        if self.day_vpoc >= self.ib_high - round(0.33 * (self.ib_high - self.ib_low), 2):
                             self.c_skew = "x" 
                         else:
                             self.c_skew = "  "

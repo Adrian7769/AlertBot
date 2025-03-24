@@ -108,4 +108,12 @@ class Base:
         else:
             logger.error(f"No Discord Webhook Configured for {self.product_name}")
     def get_color(self):
-        return self.product_color.get(self.product_name, "black")     
+        color_mapping = {
+            "blue": 0x3498db,
+            "green": 0x2ecc71,
+            "orange": 0xE67E22,
+            "purple": 0x9B59B6,
+            "black": 0x000000
+        }
+        color_name = self.product_color.get(self.product_name, "black").lower()
+        return color_mapping.get(color_name, 0x000000)    

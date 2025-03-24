@@ -15,17 +15,17 @@ class DATR(Base):
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables specific to the product
-        self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-        self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-        self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.prior_ibh = round(self.variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
-        self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)
-        self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
-        self.total_rth_delta = round(self.variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
-        self.prior_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)  
-        self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)       
-        self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
+        self.prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
+        self.day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
+        self.prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
+        self.prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
+        self.prior_ibh = round(variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
+        self.prior_ibl = round(variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)
+        self.total_ovn_delta = round(variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
+        self.total_rth_delta = round(variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
+        self.prior_vpoc = round(variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)  
+        self.eth_vwap = round(variables.get(f'{self.product_name}_ETH_VWAP'), 2)       
+        self.cpl = round(variables.get(f'{self.product_name}_CPL'), 2)
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
