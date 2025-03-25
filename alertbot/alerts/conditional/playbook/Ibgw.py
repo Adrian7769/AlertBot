@@ -16,33 +16,33 @@ class IBGW(Base):
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables (Round All Variables)
-        self.prior_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
-        self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-        self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.euro_ibh = round(self.variables.get(f'{self.product_name}_EURO_IBH'), 2)
-        self.euro_ibl = round(self.variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
-        self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-        self.prior_ibh = round(self.variables.get(f'{self.product_name}_PRIOR_IB_HIGH'), 2)
-        self.prior_ibl = round(self.variables.get(f'{self.product_name}_PRIOR_IB_LOW'), 2)                
-        self.ib_high = round(self.variables.get(f'{product_name}_IB_HIGH'), 2)
-        self.ib_low = round(self.variables.get(f'{product_name}_IB_LOW'), 2)     
-        self.day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
-        self.day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)             
-        self.a_high = round(variables.get(f'{product_name}_A_HIGH'), 2)
-        self.a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
-        self.orh = round(self.variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(self.variables.get(f'{self.product_name}_ORL'), 2)        
-        self.b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
-        self.b_low = round(variables.get(f'{product_name}_B_LOW'), 2) 
+        self.prior_vpoc = self.safe_round(variables.get(f'{self.product_name}_PRIOR_VPOC'))
+        self.day_open = self.safe_round(variables.get(f'{self.product_name}_DAY_OPEN'))
+        self.prior_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_HIGH'))
+        self.prior_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_LOW'))
+        self.ib_atr = self.safe_round(variables.get(f'{self.product_name}_IB_ATR'))
+        self.euro_ibh = self.safe_round(variables.get(f'{self.product_name}_EURO_IBH'))
+        self.euro_ibl = self.safe_round(variables.get(f'{self.product_name}_EURO_IBL'))
+        self.cpl = self.safe_round(variables.get(f'{self.product_name}_CPL'))
+        self.prior_close = self.safe_round(variables.get(f'{self.product_name}_PRIOR_CLOSE'))
+        self.prior_ibh = self.safe_round(variables.get(f'{self.product_name}_PRIOR_IB_HIGH'))
+        self.prior_ibl = self.safe_round(variables.get(f'{self.product_name}_PRIOR_IB_LOW'))                
+        self.ib_high = self.safe_round(variables.get(f'{product_name}_IB_HIGH'))
+        self.ib_low = self.safe_round(variables.get(f'{product_name}_IB_LOW'))     
+        self.day_high = self.safe_round(variables.get(f'{product_name}_DAY_HIGH'))
+        self.day_low = self.safe_round(variables.get(f'{product_name}_DAY_LOW'))             
+        self.a_high = self.safe_round(variables.get(f'{product_name}_A_HIGH'))
+        self.a_low = self.safe_round(variables.get(f'{product_name}_A_LOW'))
+        self.orh = self.safe_round(variables.get(f'{self.product_name}_ORH'))
+        self.orl = self.safe_round(variables.get(f'{self.product_name}_ORL'))        
+        self.b_high = self.safe_round(variables.get(f'{product_name}_B_HIGH'))
+        self.b_low = self.safe_round(variables.get(f'{product_name}_B_LOW')) 
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')  
-        self.fd_vpoc = round(variables.get(f'{product_name}_5D_VPOC'), 2)
-        self.td_vpoc = round(variables.get(f'{product_name}_20D_VPOC'), 2)
-        self.overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
-        self.overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)                     
-        self.day_vpoc = round(variables.get(f'{product_name}_DAY_VPOC'), 2) 
+        self.fd_vpoc = self.safe_round(variables.get(f'{product_name}_5D_VPOC'))
+        self.td_vpoc = self.safe_round(variables.get(f'{product_name}_20D_VPOC'))
+        self.overnight_high = self.safe_round(variables.get(f'{product_name}_OVNH'))
+        self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL'))                     
+        self.day_vpoc = self.safe_round(variables.get(f'{product_name}_DAY_VPOC')) 
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
@@ -52,13 +52,13 @@ class IBGW(Base):
         
     def safe_round(self, value, digits=2):
         if value is None:
-            logger.error("IBGW: Missing value for rounding; defaulting to 0.")
+            logger.error(f"IBGW | safe_round | Product: {self.product_name} | Missing value for rounding; defaulting to 0.")
             return 0
         try:
             return round(value, digits)
         except Exception as e:
-            logger.error(f"IBGW: Error rounding value {value}: {e}")
-            return 0
+            logger.error(f"IBGW | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
+            return 0 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def prior_day(self):
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
@@ -113,7 +113,7 @@ class IBGW(Base):
             day_type = "Directional"
         else:
             day_type = "Other"
-        logger.debug(f" IBGW | prior_day | Prior Day Type: {day_type}")
+        logger.debug(f" IBGW | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
         return day_type
     
     def open_type(self):
@@ -140,6 +140,7 @@ class IBGW(Base):
             open_type = "OAOR v"
         else:
             open_type = "Other"
+        logger.debug(f"IBGW | open_type | Product {self.product_name} | Open Type: {open_type}")              
         return open_type 
     
     def exp_range(self):
@@ -154,19 +155,11 @@ class IBGW(Base):
         }.get(self.product_name)
         if impvol is None:
             raise ValueError(f" IBGW | exp_range | Product: {self.product_name} | Note: Unknown Product")
-        exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
+        exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
         logger.debug(f" IBGW | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
         return exp_range
     
     def one_time_framing(self):
-        """
-        Determines one-time framing conditions based on the last two finished periods.
-        Extensive logging is provided to trace computation values.
-        
-        Returns:
-            True if one-time framing condition is met, False otherwise.
-        """
-        # Define period times based on the product.
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -174,7 +167,7 @@ class IBGW(Base):
                 'G': time(12, 0), 'H': time(12, 30), 'I': time(13, 0),
                 'J': time(13, 30), 'K': time(14, 0),
             }
-            logger.debug("one_time_framing | Using CL period times.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Using CL period times.")
         else:
             period_times = {
                 'A': time(9, 30), 'B': time(10, 0), 'C': time(10, 30),
@@ -183,116 +176,106 @@ class IBGW(Base):
                 'J': time(14, 0), 'K': time(14, 30), 'L': time(15, 0),
                 'M': time(15, 30),
             }
-            logger.debug("one_time_framing | Using non-CL period times.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Using non-CL period times.")
         
-        # Get the current time based on the established timezone.
         now = datetime.now(self.est).time()
-        logger.debug(f"one_time_framing | Current time: {now}")
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Current time: {now}")
         
-        # Sort periods and filter out the finished ones.
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
-        logger.debug(f"one_time_framing | Finished periods: {finished_periods}")
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Finished periods: {finished_periods}")
         
         if len(finished_periods) < 2:
-            logger.debug("one_time_framing | Not enough finished periods. Returning False.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Not enough finished periods. Returning False.")
             return False
         
-        # Consider the last two finished periods.
         last_two = finished_periods[-2:]
         period1, period2 = last_two[0], last_two[1]
-        logger.debug(f"one_time_framing | Last two periods selected: {period1}, {period2}")
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Last two periods selected: {period1}, {period2}")
         
-        # Retrieve high and low values for both periods.
         p1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
         p1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
         p2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
         p2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
-        logger.debug(f"one_time_framing | Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Prior Two Period Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
         
-        # If any value is missing, the check fails.
         if None in (p1_high, p1_low, p2_high, p2_low):
-            logger.debug("one_time_framing | One or more period values missing. Returning False.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | One or more period values missing. Returning False.")
             return False
         
-        # Round the values to two decimals.
-        p1_high = round(p1_high, 2)
-        p1_low = round(p1_low, 2)
-        p2_high = round(p2_high, 2)
-        p2_low = round(p2_low, 2)
-        logger.debug(f"one_time_framing | Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        p1_high = self.safe_round(p1_high)
+        p1_low = self.safe_round(p1_low)
+        p2_high = self.safe_round(p2_high)
+        p2_low = self.safe_round(p2_low)
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Prior Two Period Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
         
-        # Get the current day's high and low.
-        current_high = self.day_high
-        current_low = self.day_low
-        logger.debug(f"one_time_framing | Current day's HIGH={current_high}, LOW={current_low}")
-        
-        # Evaluate the one-time framing conditions based on direction.
+        current_period = None
+        for period, t in sorted_periods:
+            if now >= t:
+                current_period = period
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Current Period: {current_period}")
+        if current_period is None:
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | No Current Period Found, Returning False")
+            return False
+        current_period_high = self.variables.get(f"{self.product_name}_{current_period}_HIGH")
+        current_period_low = self.variables.get(f"{self.product_name}_{current_period}_LOW")
+        if current_period_high is None or current_period_low is None:
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Current period values not found. Returning False.")
+            return False
+        logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Current period {current_period} HIGH={current_period_high}, LOW={current_period_low}")        
         if self.direction == "long":
-            logger.debug("one_time_framing | Evaluating conditions for LONG direction.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for LONG direction.")
             if p2_high > p1_high and p2_low > p1_low:
-                logger.debug(f"one_time_framing | {period2} values are greater than {period1} values.")
-                if current_high > p2_high and current_low > p2_low:
-                    logger.debug("one_time_framing | Current day values exceed period2 values. Returning True.")
+                logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
+                if current_period_high > p2_high and current_period_low > p2_low:
+                    logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
                     return True
                 else:
-                    logger.debug("one_time_framing | Current day values do not exceed period2 values. Returning False.")
+                    logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Is Not One Time Framing. Returning False.")
                     return False
             else:
-                logger.debug("one_time_framing | Condition failed: period2 values are not both greater than period1 values for LONG. Returning False.")
+                logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior Periods are not One-Time Framing.")
                 return False
-
         elif self.direction == "short":
-            logger.debug("one_time_framing | Evaluating conditions for SHORT direction.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for SHORT direction.")
             if p2_high < p1_high and p2_low < p1_low:
-                logger.debug(f"one_time_framing | {period2} values are lower than {period1} values.")
-                if current_high < p2_high and current_low < p2_low:
-                    logger.debug("one_time_framing | Current day values are lower than period2 values. Returning True.")
+                logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
+                if current_period_high < p2_high and current_period_low < p2_low:
+                    logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
                     return True
                 else:
-                    logger.debug("one_time_framing | Current day values are not lower than period2 values. Returning False.")
+                    logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Is Not One Time Framing. Returning False.")
                     return False
             else:
-                logger.debug("one_time_framing | Condition failed: period2 values are not both lower than period1 values for SHORT. Returning False.")
+                logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior Periods are not One-Time Framing.")
                 return False
         else:
-            logger.debug("one_time_framing | Invalid direction specified. Returning False.")
+            logger.debug(f"IBGW | one_time_framing | Product: {self.product_name} | Invalid direction specified. Returning False.")
             return False
 
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         def log_condition(condition, description):
-            logger.debug(f"IBGW | input | Product: {self.product_name} | {description} --> {condition}")
+            logger.debug(f"IBGW | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
-
-        # Direction Based Logic
         if self.direction == "short":
-            self.ib_ext_half = log_condition(
+            self.crit1 = log_condition(
                 self.day_low >= self.ib_low - 0.5 * (self.ib_high - self.ib_low),
-                "Direction short: day_low >= ib_low - 0.5*(ib_high - ib_low)"
+                f"CRITICAL1: day_low({self.day_low}) >= ib_low({self.ib_low}) - 0.5*(ib_high({self.ib_high}) - ib_low({self.ib_low}))"
             )
         elif self.direction == "long":
-            self.ib_ext_half = log_condition(
+            self.crit1 = log_condition(
                 self.day_high <= self.ib_high + 0.5 * (self.ib_high - self.ib_low),
-                "Direction long: day_high <= ib_high + 0.5*(ib_high - ib_low)"
+                f"CRITICAL1: day_high({self.day_high}) <= ib_high({self.ib_high}) + 0.5*(ib_high({self.ib_high}) - ib_low({self.ib_low}))"
             )
-
-        # Driving Input
-        cond1 = log_condition(
+        crit2 = log_condition(
             self.ib_high - self.ib_low / self.ib_atr <= 0.85,
-            "Driving Input: (ib_high - ib_low/ib_atr) <= 0.85"
+            f"CRITICAL2: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) <= 0.85"
         )
-        cond2 = log_condition(
-            self.ib_ext_half,
-            "Driving Input: ib_ext_half"
-        )
-
-        logic = cond1 and cond2
-
-        logger.debug(f"IBGW | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
-                    f"COND1: {cond1} | COND2: {cond2}")
+        logic = self.crit1 and crit2
+        logger.debug(f"IBGW | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "
+                    f"CRITICAL1: {self.crit1} | CRITICAL2: {crit2}")
         return logic
-
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
@@ -305,20 +288,20 @@ class IBGW(Base):
             close_time = self.equity_close
             if (start_time <= self.current_time <= lunch_start) or \
             (lunch_end <= self.current_time <= close_time):
-                logger.debug(f"Within equity alert window: {self.current_time}")
+                logger.debug(f"IBGW | time_window | Product: {self.product_name} | Within equity alert window: {self.current_time}")
                 return True
             else:
-                logger.debug(f"Outside equity alert window: {self.current_time}")
+                logger.debug(f"IBGW | time_window | Product: {self.product_name} | Outside equity alert window: {self.current_time}")
                 return False
         elif self.product_name == 'CL':
             if self.crude_ib <= self.current_time <= self.crude_close:
-                logger.debug(f"Within crude alert window: {self.current_time}")
+                logger.debug(f"IBGW | time_window | Product: {self.product_name} | Within crude alert window: {self.current_time}")
                 return True
             else:
-                logger.debug(f"Outside crude alert window: {self.current_time}")
+                logger.debug(f"IBGW | time_window | Product: {self.product_name} | Outside crude alert window: {self.current_time}")
                 return False
         else:
-            logger.warning(f"No time window defined for product: {self.product_name}")
+            logger.warning(f"IBGW | time_window | Product: {self.product_name} | No time window defined for product")
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
@@ -378,7 +361,7 @@ class IBGW(Base):
                         else:
                             self.c_magnet = "  "
                     # logic for not hit 1.5x IB
-                    if self.ib_ext_half == True:
+                    if self.crit1 == True:
                         self.c_ib_ext_half = "x"                     
                     else:
                         self.c_ib_ext_half = "  "
@@ -468,7 +451,7 @@ class IBGW(Base):
  
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" IBGW | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f" IBGW | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         
         if self.direction == "long":
             self.destination = self.ib_high + 0.5 * (self.ib_high - self.ib_low)

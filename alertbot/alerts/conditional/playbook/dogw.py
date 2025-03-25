@@ -49,16 +49,16 @@ class DOGW(Base):
         
     def safe_round(self, value, digits=2):
         if value is None:
-            logger.error("DOGW: Missing value for rounding; defaulting to 0.")
+            logger.error(f"DOGW | safe_round | Product: {self.product_name} | Missing value for rounding; defaulting to 0.")
             return 0
         try:
             return round(value, digits)
         except Exception as e:
-            logger.error(f"DOGW: Error rounding value {value}: {e}")
-            return 0
+            logger.error(f"DOGW | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
+            return 0 
     # ---------------------------------- Specific Calculations ------------------------------------ #   
     def open_type_algorithm(self): # This probably needs to be refined!
-        a_period_mid = round(((self.a_high + self.a_low) / 2), 2)
+        a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
         a_period_range = self.a_high - self.a_low
         five_pct = 0.05 * a_period_range
         fifteen_pct = 0.15 * a_period_range
@@ -179,7 +179,6 @@ class DOGW(Base):
         return exp_range, exp_hi, exp_lo
       
     def total_delta(self):
-        logger.debug(f"DOGW | total_delta | Product: {self.product_name} | Note: Running")       
         total_delta = self.total_ovn_delta + self.total_rth_delta   
         logger.debug(f"DOGW | total_delta | Product: {self.product_name} | TOTAL_DELTA: {total_delta}")
         return total_delta   
@@ -187,7 +186,7 @@ class DOGW(Base):
     # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         def log_condition(condition, description):
-            logger.debug(f"DOGW | input | Product: {self.product_name} | {description} --> {condition}")
+            logger.debug(f"DOGW | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
 
         self.used_atr = self.ib_high - self.ib_low
@@ -195,33 +194,28 @@ class DOGW(Base):
 
         if self.direction == "long":
             self.target = self.ib_low + self.ib_atr
-            self.or_condition = log_condition(self.cpl > self.orh, "OR Condition for long: self.cpl > self.orh")
+            crit1 = log_condition(self.cpl > self.orh, f"CRITICAL1: self.cpl({self.cpl}) > self.orh({self.orh})")
         elif self.direction == "short":
             self.target = self.ib_high - self.ib_atr
-            self.or_condition = log_condition(self.cpl < self.orl, "OR Condition for short: self.cpl < self.orl")
+            crit1 = log_condition(self.cpl < self.orl, f"CRITICAL1: self.cpl({self.cpl}) < self.orl({self.orl})")
         else:
             self.target = None
             self.atr_condition = False
             self.or_condition = False
 
-        self.atr_condition = log_condition(self.remaining_atr >= 0.4 * self.ib_atr, "ATR Condition: remaining_atr >= 0.4 * ib_atr")
+        crit2 = log_condition(self.remaining_atr >= 0.4 * self.ib_atr, f"CRITICAL2: remaining_atr({self.remaining_atr}) >= 0.4 * ib_atr({self.ib_atr})")
 
-        cond_opentype = log_condition(
+        crit3 = log_condition(
             self.opentype in ["OD v", "OD ^", "OTD v", "OTD ^", "ORR ^", "ORR v", "OAOR ^", "OAOR v"],
-            "Driving: opentype in valid list"
+            f"CRITICAL3: self.opentype({self.opentype}) in ['OD v', 'OD ^', 'OTD v', 'OTD ^', 'ORR ^', 'ORR v', 'OAOR ^', 'OAOR v']"
         )
-        cond_day_range = log_condition(
+        crit4 = log_condition(
             (self.day_high <= self.ib_high and self.day_low >= self.ib_low),
-            "Driving: day range condition (day_high <= ib_high and day_low >= ib_low)"
+            f"CRITICAL4: day_high({self.day_high}) <= ib_high({self.ib_high}) and day_low({self.day_low}) >= ib_low({self.ib_low})"
         )
-
-        logic = cond_opentype and self.or_condition and self.atr_condition and cond_day_range
-
-        logger.debug(f"DOGW | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
-                    f"OPENTYPE: {cond_opentype} | OR_CONDITION: {self.or_condition} | "
-                    f"ATR_CONDITION: {self.atr_condition} | DAY_RANGE: {cond_day_range}")
+        logic = crit1 and crit2 and crit3 and crit4
+        logger.debug(f"DOGW | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4}")
         return logic
-
     
     # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
@@ -249,14 +243,14 @@ class DOGW(Base):
     def check(self):
         
         if self.opentype == "OAIR":
-            logger.debug("DOGW | check | Open type is OAIR; returning False.")
+            logger.debug(f"DOGW | check | Product: {self.product_name} | Open type is OAIR; returning False.")
             return False
         elif self.opentype in ["OD v", "OTD v", "OAOR v", "ORR v"]:
             self.direction = "short"
         elif self.opentype in ["OD ^", "OTD ^", "OAOR ^", "ORR ^"]:
             self.direction = "long"
         else:
-            logger.debug("DOGW | check | Open type not recognized; returning False.")
+            logger.debug(f"DOGW | check | Product: {self.product_name} | Open type not recognized; returning False.")
             return False
         
         self.color = "red" if self.direction == "short" else "green"
@@ -347,7 +341,7 @@ class DOGW(Base):
 
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f"DOGW | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f"DOGW | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         
         title = f"**{self.product_name} - Playbook Alert** - **DOGW - {self.opentype}**"
 

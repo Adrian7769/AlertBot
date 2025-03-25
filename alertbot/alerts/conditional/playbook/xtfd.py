@@ -51,12 +51,12 @@ class XTFD(Base):
         
     def safe_round(self, value, digits=2):
         if value is None:
-            logger.error("XTFD: Missing value for rounding; defaulting to 0.")
+            logger.error(f"XTFD | safe_round | Product: {self.product_name} | Missing value for rounding; defaulting to 0.")
             return 0
         try:
             return round(value, digits)
         except Exception as e:
-            logger.error(f"XTFD: Error rounding value {value}: {e}")
+            logger.error(f"XTFD | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0
     
     def open_type(self):
@@ -146,17 +146,14 @@ class XTFD(Base):
         if not self.prior_close:
             logger.error(f"XTFD | exp_range | Product: {self.product_name} | Note: No Close Found")
             raise ValueError(f"XTFD | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
-        
         impvol = {
             'ES': self.es_impvol,
             'NQ': self.nq_impvol,
             'RTY': self.rty_impvol,
             'CL': self.cl_impvol
         }.get(self.product_name)
-
         if impvol is None:
             raise ValueError(f"XTFD | exp_range | Product: {self.product_name} | Note: Unknown Product")
-
         exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
         logger.debug(f"XTFD | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
         return exp_range
@@ -308,15 +305,25 @@ class XTFD(Base):
         p2_low = self.safe_round(p2_low)
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Prior Two Period Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
         
-        current_high = self.day_high
-        current_low = self.day_low
-        logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current day's HIGH={current_high}, LOW={current_low}")
-        
+        current_period = None
+        for period, t in sorted_periods:
+            if now >= t:
+                current_period = period
+        logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current Period: {current_period}")
+        if current_period is None:
+            logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | No Current Period Found, Returning False")
+            return False
+        current_period_high = self.variables.get(f"{self.product_name}_{current_period}_HIGH")
+        current_period_low = self.variables.get(f"{self.product_name}_{current_period}_LOW")
+        if current_period_high is None or current_period_low is None:
+            logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current period values not found. Returning False.")
+            return False
+        logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current period {current_period} HIGH={current_period_high}, LOW={current_period_low}")        
         if self.direction == "long":
             logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for LONG direction.")
             if p2_high > p1_high and p2_low > p1_low:
                 logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
-                if current_high > p2_high and current_low > p2_low:
+                if current_period_high > p2_high and current_period_low > p2_low:
                     logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
                     return True
                 else:
@@ -325,13 +332,11 @@ class XTFD(Base):
             else:
                 logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior Periods are not One-Time Framing.")
                 return False
-
         elif self.direction == "short":
             logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for SHORT direction.")
             if p2_high < p1_high and p2_low < p1_low:
                 logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
-                # We Cannot Use Current day High and Current day low to represent current Period!
-                if current_high < p2_high and current_low < p2_low:
+                if current_period_high < p2_high and current_period_low < p2_low:
                     logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
                     return True
                 else:
@@ -347,51 +352,40 @@ class XTFD(Base):
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         def log_condition(condition, description):
-            logger.debug(f"XTFD | input | Product: {self.product_name} | {description} --> {condition}")
+            logger.debug(f"XTFD | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
-
         self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
         self.remaining_range = self.exp_rng - self.used_range
-
         if self.direction == "short":
-            self.no_skew = log_condition(
+            crit4 = log_condition(
                 self.day_vpoc < self.ib_high - 0.35 * (self.ib_high - self.ib_low),
-                "No Skew for short: day_vpoc < ib_high - 0.35*(ib_high - ib_low)"
+                f"CRITICAL4: day_vpoc({self.day_vpoc}) < ib_high({self.day_high}) - 0.35*(ib_high({self.ib_high}) - ib_low({self.ib_low}))"
             )
         elif self.direction == "long":
-            self.no_skew = log_condition(
+            crit4 = log_condition(
                 self.day_vpoc > self.ib_low + 0.35 * (self.ib_high - self.ib_low),
-                "No Skew for long: day_vpoc > ib_low + 0.35*(ib_high - ib_low)"
+                f"CRITICAL4: day_vpoc({self.day_vpoc}) > ib_low({self.ib_low}) + 0.35*(ib_high({self.ib_high}) - ib_low({self.ib_low}))"
             )
-
-        cond1 = log_condition(
+        crit1 = log_condition(
             (self.ib_high - self.ib_low) / self.ib_atr >= 1.00,
-            "Condition 1: (ib_high - ib_low)/ib_atr >= 1.00"
+            f"CRITICAL1: (ib_high({self.ib_high}) - ib_low({self.ib_low}))/ib_atr({self.ib_atr}) >= 1.00"
         )
-        cond2 = log_condition(
+        crit2 = log_condition(
             self.remaining_range >= (0.75 * self.exp_rng),
-            "Condition 2: remaining_range >= 0.75 * exp_rng"
+            f"CRITICAL2: remaining_range({self.remaining_range}) >= 0.75 * exp_rng({self.exp_rng})"
         )
-        cond3 = log_condition(
+        crit3 = log_condition(
             self.ib_low < self.day_vpoc < self.ib_low,
-            "Condition 3: ib_low < day_vpoc < ib_low"
+            f"CRITICAL3: ib_low({self.ib_low}) < day_vpoc({self.day_vpoc}) < ib_low({self.ib_low})"
         )
-        cond4 = log_condition(
-            self.no_skew,
-            "Condition 4: no_skew"
-        )
-        cond5 = log_condition(
+        crit5 = log_condition(
             abs(self.cpl - self.day_vpoc) > 0.35 * (self.day_high - self.day_low),
-            "Condition 5: abs(cpl - day_vpoc) > 0.35*(day_high - day_low)"
+            f"CRITICAL5: abs(cpl({self.cpl}) - day_vpoc({self.day_vpoc})) > 0.35*(day_high({self.day_high}) - day_low({self.day_low}))"
         )
-
-        logic = cond1 and cond2 and cond3 and cond4 and cond5
-
-        logger.debug(f"XTFD | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
-                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4} | COND5: {cond5}")
+        logic = crit1 and crit2 and crit3 and crit4 and crit5
+        logger.debug(f"XTFD | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "
+                    f"CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4} | CRITICAL5: {crit5}")
         return logic
-
-    
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
         self.current_datetime = datetime.now(self.est)
@@ -531,7 +525,7 @@ class XTFD(Base):
  
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" TRCT | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f" XTFD | discord_message | Note: Invalid direction '{self.direction}'")
         
         if self.open_type() == "OAIR":
             ot = self.open_type()

@@ -34,12 +34,12 @@ class DATR(Base):
         self.prior_mid = ((self.prior_high + self.prior_low) / 2)
     def safe_round(self, value, digits=2):
         if value is None:
-            logger.error("DATR: Missing value for rounding; defaulting to 0.")
+            logger.error(f"DATR | safe_round | Product: {self.product_name} | Missing value for rounding; defaulting to 0.")
             return 0
         try:
             return round(value, digits)
         except Exception as e:
-            logger.error(f"DATR: Error rounding value {value}: {e}")
+            logger.error(f"DATR | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
@@ -128,17 +128,17 @@ class DATR(Base):
         logic = False
         crit2 = None
         crit3 = None
-        crit1 = log_condition((self.prior_high - tolerance) > self.day_open > (self.prior_low + tolerance), "CRITICAL1 --> (self.prior_high - tolerance) > self.day_open > (self.prior_low + tolerance)")
+        crit1 = log_condition((self.prior_high - tolerance) > self.day_open > (self.prior_low + tolerance), f"CRITICAL1: (self.prior_high({self.prior_high}) - tolerance({tolerance})) > self.day_open({self.day_open}) > (self.prior_low({self.prior_low}) + tolerance({tolerance}))")
         if crit1:
             if self.direction == 'Higher':
-                crit2 = log_condition(self.cpl > prior_mid, "CRITICAL2 --> self.cpl > prior_mid")
-                crit3 = log_condition(self.prior_vpoc > ((self.prior_high + prior_mid) / 2), "CRITICAL3 --> self.prior_vpoc > ((prior_high + prior_mid) / 2)")
+                crit2 = log_condition(self.cpl > prior_mid, f"CRITICAL2: self.cpl({self.cpl}) > prior_mid({self.prior_mid})")
+                crit3 = log_condition(self.prior_vpoc > ((self.prior_high + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) > ((prior_high({self.prior_high}) + prior_mid({self.prior_mid})) / 2)")
                 logic = crit2 and crit3
             elif self.direction == 'Lower':
-                crit2 = log_condition(self.cpl < prior_mid, "CRITICAL2 --> self.cpl < prior_mid")
-                crit3 = log_condition(self.prior_vpoc < ((self.prior_low + prior_mid) / 2), "CRITICAL3 --> self.prior_vpoc < ((prior_low + prior_mid) / 2)")
+                crit2 = log_condition(self.cpl < prior_mid, f"CRITICAL2: self.cpl({self.cpl}) < prior_mid({self.prior_mid})")
+                crit3 = log_condition(self.prior_vpoc < ((self.prior_low + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) < ((prior_low({self.prior_low}) + prior_mid({self.prior_mid})) / 2)")
                 logic = crit2 and crit3
-        logger.debug(f"DATR | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: CRITICAL1: {crit1} CRITICAL2: {crit2} CRITICAL3: {crit3}")
+        logger.debug(f"DATR | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3}")
         return logic
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
@@ -247,7 +247,7 @@ class DATR(Base):
         }
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" DATR | discord_message | Note: Invalid direction '{self.direction}'")
+            raise ValueError(f" DATR | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         title = f":large_{pro_color}_square: **{self.product_name} - Playbook Alert** :{settings['large']}{self.color}_circle: **DATR {settings['pv_indicator']}**"
         embed = DiscordEmbed(
             title=title,

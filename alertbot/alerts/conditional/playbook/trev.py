@@ -15,24 +15,24 @@ class TREV(Base):
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables (Round All Variables)
-        self.prior_vpoc = round(self.variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
-        self.day_open = round(self.variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-        self.p_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.p_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.prior_prior_high = round(self.variables.get(f'{self.product_name}_PRIOR_PRIOR_HIGH'), 2)
-        self.prior_prior_low = round(self.variables.get(f'{self.product_name}_PRIOR_PRIOR_LOW'), 2)                
-        self.ib_atr = round(self.variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.eth_vwap = round(self.variables.get(f'{self.product_name}_ETH_VWAP'), 2)
-        self.cpl = round(self.variables.get(f'{self.product_name}_CPL'), 2)
-        self.total_ovn_delta = round(self.variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
-        self.total_rth_delta = round(self.variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
-        self.prior_close = round(self.variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-        self.ib_high = round(self.variables.get(f'{product_name}_IB_HIGH'), 2)
-        self.ib_low = round(self.variables.get(f'{product_name}_IB_LOW'), 2)
-        self.fd_vpoc = round(variables.get(f'{product_name}_5D_VPOC'), 2)
-        self.td_vpoc = round(variables.get(f'{product_name}_20D_VPOC'), 2)        
+        self.prior_vpoc = self.safe_round(variables.get(f'{self.product_name}_PRIOR_VPOC'))
+        self.day_open = self.safe_round(variables.get(f'{self.product_name}_DAY_OPEN'))
+        self.p_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_HIGH'))
+        self.p_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_LOW'))
+        self.prior_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_HIGH'))
+        self.prior_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_LOW'))
+        self.prior_prior_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_PRIOR_HIGH'))
+        self.prior_prior_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_PRIOR_LOW'))                
+        self.ib_atr = self.safe_round(variables.get(f'{self.product_name}_IB_ATR'))
+        self.eth_vwap = variables.get(f'{self.product_name}_ETH_VWAP')
+        self.cpl = self.safe_round(variables.get(f'{self.product_name}_CPL'))
+        self.total_ovn_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'))
+        self.total_rth_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'))
+        self.prior_close = self.safe_round(variables.get(f'{self.product_name}_PRIOR_CLOSE'))
+        self.ib_high = self.safe_round(variables.get(f'{product_name}_IB_HIGH'))
+        self.ib_low = self.safe_round(variables.get(f'{product_name}_IB_LOW'))
+        self.fd_vpoc = self.safe_round(variables.get(f'{product_name}_5D_VPOC'))
+        self.td_vpoc = self.safe_round(variables.get(f'{product_name}_20D_VPOC'))        
         
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
@@ -45,34 +45,28 @@ class TREV(Base):
         
     def safe_round(self, value, digits=2):
         if value is None:
-            logger.error("TREV: Missing value for rounding; defaulting to 0.")
+            logger.error(f"TREV | safe_round | Product: {self.product_name} | Missing value for rounding; defaulting to 0.")
             return 0
         try:
             return round(value, digits)
         except Exception as e:
-            logger.error(f"TREV: Error rounding value {value}: {e}")
+            logger.error(f"TREV | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0        
 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
-
-        # Calculation (product specific or Not)
         if not self.prior_close:
             logger.error(f" TREV | exp_range | Product: {self.product_name} | Note: No Close Found")
             raise ValueError(f" TREV | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
-        
         impvol = {
             'ES': self.es_impvol,
             'NQ': self.nq_impvol,
             'RTY': self.rty_impvol,
             'CL': self.cl_impvol
         }.get(self.product_name)
-
         if impvol is None:
             raise ValueError(f" TREV | exp_range | Product: {self.product_name} | Note: Unknown Product")
-
-        exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
-        
+        exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
         logger.debug(f" TREV | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
         return exp_range
     
@@ -81,12 +75,12 @@ class TREV(Base):
         gap_tier = ""
         gap_size = 0
         if self.day_open > self.prior_high:
-            gap_size = round((self.day_open - self.prior_high), 2)
+            gap_size = self.safe_round((self.day_open - self.prior_high))
             gap = "Gap Up"
             if self.exp_rng == 0:
                 gap_tier = "Undefined"  
             else:
-                gap_ratio = round((gap_size / self.exp_rng) , 2)
+                gap_ratio = round((gap_size / self.exp_rng))
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier_1"
                 elif gap_ratio <= 0.75:
@@ -94,12 +88,12 @@ class TREV(Base):
                 else:
                     gap_tier = "Tier_3"
         elif self.day_open < self.prior_low:
-            gap_size = round((self.prior_low - self.day_open), 2)
+            gap_size = self.safe_round((self.prior_low - self.day_open))
             gap = "Gap Down"
             if self.exp_rng == 0:
                 gap_tier = "Undefined" 
             else:
-                gap_ratio = round((gap_size / self.exp_rng) , 2)
+                gap_ratio = self.safe_round((gap_size / self.exp_rng))
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier_1"
                 elif gap_ratio <= 0.75:
@@ -110,15 +104,16 @@ class TREV(Base):
             gap = "No Gap"
             gap_tier = "Tier_0"
             gap_size = 0
+        logger.debug(f" TREV | gap_info | Product: {self.product_name} | GAP: {gap} | GAP_TIER: {gap_tier} | GAP_SIZE: {gap_size}")
         return gap_tier, gap, gap_size
         
     def total_delta(self):
         total_delta = self.total_ovn_delta + self.total_rth_delta
-        logger.debug(f" TREV | total_delta | TOTAL_DELTA: {total_delta}")
+        logger.debug(f" TREV | total_delta | Product: {self.product_name} | TOTAL_DELTA: {total_delta}")
         return total_delta  
      
     def posture(self):
-        threshold = round((self.exp_rng * 0.68), 2)
+        threshold = self.safe_round((self.exp_rng * 0.68))
         if (abs(self.cpl - self.fd_vpoc) <= threshold) and (abs(self.fd_vpoc - self.td_vpoc) <= threshold):
             posture = "PRICE=5D=20D"
         elif (self.cpl > self.fd_vpoc + threshold) and (self.fd_vpoc > self.td_vpoc + threshold):
@@ -139,59 +134,50 @@ class TREV(Base):
             posture = "PRICEv5D^20D"
         else:
             posture = "Other"
+        logger.debug(f" TREV | posture | Product: {self.product_name} | POSTURE: {posture}")
         return posture    
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
         def log_condition(condition, description):
-            logger.debug(f"TREV | input | Product: {self.product_name} | {description} --> {condition}")
+            logger.debug(f"TREV | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
-
-        self.used_atr = self.ib_high - self.ib_low
-        self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-
-        # Direction Based Logic
         if self.direction == "short":
-            self.several_dir_days = log_condition(
+            crit1 = log_condition(
                 self.prior_low > self.prior_prior_high,
-                "several_dir_days (short): prior_low > prior_prior_high"
+                f"CRITICAL1: prior_low({self.prior_low}) > prior_prior_high({self.prior_prior_high})"
             )
-            self.vpoc_location = log_condition(
+            crit2 = log_condition(
                 self.prior_vpoc > self.prior_low + 0.33 * (self.prior_high - self.prior_low),
-                "vpoc_location (short): prior_vpoc > (prior_low + 0.33*(prior_high - prior_low))"
+                f"CRITICAL2: prior_vpoc({self.prior_vpoc}) > (prior_low({self.prior_low}) + 0.33*(prior_high({self.prior_high}) - prior_low({self.prior_low})))"
             )
-            self.ab_vwap = log_condition(
+            crit3 = log_condition(
                 self.cpl < self.eth_vwap,
-                "ab_vwap (short): cpl < eth_vwap"
+                f"CRITICAL3: cpl({self.cpl}) < eth_vwap({self.eth_vwap})"
             )
         elif self.direction == "long":
-            self.several_dir_days = log_condition(
+            crit1 = log_condition(
                 self.prior_high < self.prior_prior_low,
-                "several_dir_days (long): prior_high < prior_prior_low"
+                f"CRITICAL1: prior_high({self.prior_high}) < prior_prior_low({self.prior_prior_low})"
             )
-            self.vpoc_location = log_condition(
+            crit2 = log_condition(
                 self.prior_vpoc < self.prior_high - 0.33 * (self.prior_high - self.prior_low),
-                "vpoc_location (long): prior_vpoc < (prior_high - 0.33*(prior_high - prior_low))"
+                f"CRITICAL2: prior_vpoc({self.prior_vpoc}) < (prior_high({self.prior_high}) - 0.33*(prior_high({self.prior_high}) - prior_low({self.prior_low})))"
             )
-            self.ab_vwap = log_condition(
+            crit3 = log_condition(
                 self.cpl > self.eth_vwap,
-                "ab_vwap (long): cpl > eth_vwap"
+                f"CRITICAL3: cpl({self.cpl}) > eth_vwap({self.eth_vwap})"
             )
-
-        # Driving Input Conditions
-        cond1 = log_condition(self.several_dir_days, "Driving Condition 1: several_dir_days")
-        cond2 = log_condition(self.vpoc_location, "Driving Condition 2: vpoc_location")
-        cond3 = log_condition(self.gap_tier == "Tier_1", "Driving Condition 3: gap_tier == 'Tier_1'")
-        cond4 = log_condition(self.ab_vwap, "Driving Condition 4: ab_vwap")
-        cond5 = log_condition(
+        crit4 = log_condition(
+            self.gap_tier == "Tier_1",
+            f"CRITICAL4: gap_tier({self.gap_tier}) == 'Tier_1'")
+        crit5 = log_condition(
             self.posture() in ["PRICE^5D^20D", "PRICEv5Dv20D", "PRICEv5D^20D", "PRICE^5Dv20D"],
-            "Driving Condition 5: posture() in valid list"
+            f"CRITICAL5: posture({self.posture()}) in ['PRICE^5D^20D', 'PRICEv5Dv20D', 'PRICEv5D^20D', 'PRICE^5Dv20D']"
         )
-
-        logic = cond1 and cond2 and cond3 and cond4 and cond5
-
-        logger.debug(f"TREV | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
-                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4} | COND5: {cond5}")
+        logic = crit1 and crit2 and crit3 and crit4 and crit5
+        logger.debug(f"TREV | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "
+                    f"CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4} | CRITICAL5: {crit5}")
         return logic
 
     
@@ -285,7 +271,7 @@ class TREV(Base):
  
         settings = direction_settings.get(self.direction)
         if not settings:
-            raise ValueError(f" TREV | discord_message | Note: Invalid direction '{self.direction}'")     
+            raise ValueError(f" TREV | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")     
 
         # Title Construction with Emojis
         title = f"**{self.product_name} - Playbook Alert** - **3REV {settings['dir_indicator']}**"
