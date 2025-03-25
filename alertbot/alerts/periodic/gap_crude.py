@@ -64,8 +64,8 @@ class Gap_Check_Crude(Base):
     # ---------------------- Driving Input Logic ------------------------- #
     def send_alert(self):
         threads = []
-        for product_name in ['CL']:
-            thread = threading.Thread(target=self.process_product, args=(product_name,))
+        for self.product_name in ['CL']:
+            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
             thread.start()
             threads.append(thread)
             time.sleep(1)
@@ -76,20 +76,20 @@ class Gap_Check_Crude(Base):
     # ---------------------- Alert Preparation ------------------------- #
     def process_product(self, product_name):
         try:
-            variables = self.fetch_latest_variables(product_name)
+            variables = self.fetch_latest_variables(self.product_name)
             if not variables:
-                logger.error(f" GAP_CRUDE | process_product | Product: {product_name} |  Note: No data available ")
+                logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} |  Note: No data available ")
                 return
             
             # Variables specific to the product
-            prior_close = round(variables.get(f'{product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{product_name}_PRIOR_LOW'), 2)
+            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
+            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
+            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
+            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
 
             impvol = config.cl_impvol
 
-            color = self.product_color.get(product_name)
+            color = self.product_color.get(self.product_name)
             current_time = datetime.now(self.est).strftime('%H:%M:%S')
             
             # Calculations
@@ -110,7 +110,7 @@ class Gap_Check_Crude(Base):
                 # Build the Discord Embed
                 try:
                     # Title Construction with Emojis
-                    embed_title = f":large_{color}_square: **{product_name} - Context Alert - Gap** :large_{color}_square:"
+                    embed_title = f":large_{color}_square: **{self.product_name} - Context Alert - Gap** :large_{color}_square:"
                     embed = DiscordEmbed(
                         title=embed_title,
                         description=(
@@ -129,8 +129,8 @@ class Gap_Check_Crude(Base):
                     self.send_alert_embed(embed, username=None, avatar_url=None)
 
                 except Exception as e:
-                    logger.error(f" GAP_CRUDE | process_product | Product: {product_name} | Error sending Discord message: {e}")
+                    logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} | Error sending Discord message: {e}")
             else:
-                logger.info(f" GAP_CRUDE | process_product | Product: {product_name} | Note: No Gap detected, message not sent.")
+                logger.info(f" GAP_CRUDE | process_product | Product: {self.product_name} | Note: No Gap detected, message not sent.")
         except Exception as e:
-            logger.error(f" GAP_CRUDE | process_product | Product: {product_name} | Error processing: {e}")
+            logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} | Error processing: {e}")

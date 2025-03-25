@@ -174,7 +174,7 @@ conditions = [
     },
     {
         "name": "IBGW_ES",
-        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6"],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6", "ES_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -182,7 +182,7 @@ conditions = [
     },
     {
         "name": "IBGW_NQ",
-        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6"],
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6", "NQ_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -190,7 +190,7 @@ conditions = [
     },
     {
         "name": "IBGW_RTY",
-        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6"],
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6", "RTY_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -198,13 +198,13 @@ conditions = [
     },
     {
         "name": "IBGW_CL",
-        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6"],
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6", "CL_7"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },
     {
         "name": "IBGP_ES",
-        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6"],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6", "ES_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -212,7 +212,7 @@ conditions = [
     },
     {
         "name": "IBGP_NQ",
-        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6"],
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_6", "NQ_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -220,7 +220,7 @@ conditions = [
     },
     {
         "name": "IBGP_RTY",
-        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6"],
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_6", "RTY_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -228,13 +228,13 @@ conditions = [
     },
     {
         "name": "IBGP_CL",
-        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6"],
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6", "CL_7"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     },  
     {
         "name": "XTFD_ES",
-        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4"],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -242,7 +242,7 @@ conditions = [
     },
     {
         "name": "XTFD_NQ",
-        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4"],
+        "required_files": ["NQ_1", "NQ_2", "NQ_3", "NQ_4", "NQ_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -250,7 +250,7 @@ conditions = [
     },
     {
         "name": "XTFD_RTY",
-        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4"],
+        "required_files": ["RTY_1", "RTY_2", "RTY_3", "RTY_4", "RTY_7"],
         "time_windows": [
             {"start_time": datetime_time(10, 30), "end_time": datetime_time(12, 0)},
             {"start_time": datetime_time(14, 0), "end_time": datetime_time(16, 0)},
@@ -258,7 +258,7 @@ conditions = [
     },
     {
         "name": "XTFD_CL",
-        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4"],
+        "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_7"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
     }, 

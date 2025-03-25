@@ -44,18 +44,6 @@ class IB_Crude_Alert(Base):
         else:
             range_down = round(abs((exp_lo - cpl) / (exp_range * 2)* 100), 2)
         return exhausted, range_used*100, range_up, range_down, exp_range
-    def slope_to_vwap(self, delta_price, scale_price, scale_time):
-        delta_time = 0.5
-        delta_y = delta_price * scale_price
-        delta_x = delta_time * scale_time
-        slope = delta_y / delta_x
-        theta_radians = math.atan(slope)
-        theta_degrees = round((math.degrees(theta_radians)), 2)
-        if theta_degrees >= 10:
-            vwap_type = 'Strong' 
-        else:
-            vwap_type = 'Flat'
-        return theta_degrees, vwap_type
     def gap_info(self, day_open, prior_high, prior_low, exp_range):
         gap = ""
         gap_tier = ""
@@ -142,47 +130,52 @@ class IB_Crude_Alert(Base):
     # ---------------------- Alert Preparation ------------------------- #
     def send_alert(self):
         threads = []
-        for product_name in ['CL']:
-            thread = threading.Thread(target=self.process_product, args=(product_name,))
+        for self.product_name in ['CL']:
+            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
             thread.start()
             threads.append(thread)
             time.sleep(1)
+
         # Optionally wait for all threads to complete
         for thread in threads:
             thread.join()
+
     def process_product(self, product_name):
         try:
-            variables = self.fetch_latest_variables(product_name)
+            self.product_name = product_name
+            variables = self.fetch_latest_variables(self.product_name)
             if not variables:
-                logger.error(f" IB_CRUDE | process_product | Product: {product_name} |  Note: No data available ")
+                logger.error(f" IB_CRUDE | process_product | Product: {self.product_name} |  Note: No data available ")
                 return
-            # Variables specific to the product
-            ib_atr = round(variables.get(f'{product_name}_IB_ATR'), 2)
-            ib_high = round(variables.get(f'{product_name}_IB_HIGH'), 2)
-            ib_low = round(variables.get(f'{product_name}_IB_LOW'), 2)
-            prior_close = round(variables.get(f'{product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{product_name}_PRIOR_LOW'), 2)
-            cpl = round(variables.get(f'{product_name}_CPL'), 2)
-            fd_vpoc = round(variables.get(f'{product_name}_5D_VPOC'), 2)
-            td_vpoc = round(variables.get(f'{product_name}_20D_VPOC'), 2)
-            ovn_to_ibh = round(variables.get(f'{product_name}_OVNTOIB_HI'), 2)
-            ovn_to_ibl = round(variables.get(f'{product_name}_OVNTOIB_LO'), 2)
-            a_high = round(variables.get(f'{product_name}_A_HIGH'), 2)
-            a_low = round(variables.get(f'{product_name}_A_LOW'), 2)
-            b_high = round(variables.get(f'{product_name}_B_HIGH'), 2)
-            b_low = round(variables.get(f'{product_name}_B_LOW'), 2)
-            orh = round(variables.get(f'{product_name}_ORH'), 2)
-            orl = round(variables.get(f'{product_name}_ORL'), 2)
-            rvol = round(variables.get(f'{product_name}_CUMULATIVE_RVOL'), 2)
-            overnight_high = round(variables.get(f'{product_name}_OVNH'), 2)
-            overnight_low = round(variables.get(f'{product_name}_OVNL'), 2)
-            day_high = round(variables.get(f'{product_name}_DAY_HIGH'), 2)
-            day_low = round(variables.get(f'{product_name}_DAY_LOW'), 2)            
-            vwap_slope = (variables.get(f'{product_name}_VWAP_SLOPE'))
+            
+            # Variables (Round All Variables) 
+            ib_atr = round(variables.get(f'{self.product_name}_IB_ATR'), 2)
+            ib_high = round(variables.get(f'{self.product_name}_IB_HIGH'), 2)
+            ib_low = round(variables.get(f'{self.product_name}_IB_LOW'), 2)
+            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
+            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
+            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
+            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
+            cpl = round(variables.get(f'{self.product_name}_CPL'), 2)
+            fd_vpoc = round(variables.get(f'{self.product_name}_5D_VPOC'), 2)
+            td_vpoc = round(variables.get(f'{self.product_name}_20D_VPOC'), 2)
+            ovn_to_ibh = round(variables.get(f'{self.product_name}_OVNTOIB_HI'), 2)
+            ovn_to_ibl = round(variables.get(f'{self.product_name}_OVNTOIB_LO'), 2)
+            a_high = round(variables.get(f'{self.product_name}_A_HIGH'), 2)
+            a_low = round(variables.get(f'{self.product_name}_A_LOW'), 2)
+            b_high = round(variables.get(f'{self.product_name}_B_HIGH'), 2)
+            b_low = round(variables.get(f'{self.product_name}_B_LOW'), 2)
+            orh = round(variables.get(f'{self.product_name}_ORH'), 2)
+            orl = round(variables.get(f'{self.product_name}_ORL'), 2)
+            rvol = round(variables.get(f'{self.product_name}_CUMULATIVE_RVOL'), 2)
+            overnight_high = round(variables.get(f'{self.product_name}_OVNH'), 2)
+            overnight_low = round(variables.get(f'{self.product_name}_OVNL'), 2)
+            day_high = round(variables.get(f'{self.product_name}_DAY_HIGH'), 2)
+            day_low = round(variables.get(f'{self.product_name}_DAY_LOW'), 2) 
             impvol = config.cl_impvol
-            color = self.product_color.get(product_name)
+            vwap_slope = (variables.get(f'{self.product_name}_VWAP_SLOPE'))
+
+            color = self.product_color.get(self.product_name)
             current_time = datetime.now(self.est).strftime('%H:%M:%S')
             
             # Calculations
@@ -206,20 +199,22 @@ class IB_Crude_Alert(Base):
                 vwap_type = "Strong"
             else:
                 vwap_type = "Weak"
-                
+            
             # Build the Discord Embed
             try:
-                embed_title = f":large_{color}_square: **{product_name} - Context - IB Check-In** :loudspeaker:"
+                embed_title = f":large_{color}_square: **{self.product_name} - Context - IB Check-In** :loudspeaker:"
                 embed = DiscordEmbed(
                     title=embed_title,
                     description=(
-                        f"**Open Type**: {open_type} \n"
-                        f"**{ib_type}**: {ib_range}p = {round(ib_vatr, 2)}% of Avg\n"
-                        f"**Vwap {vwap_type}**: {vwap_slope*100} \n"
+                        f"**Open Type**: _{open_type}_\n"
+                        f"**{ib_type}**: _{ib_range}p_ = _{round(ib_vatr, 2)}%_ of Avg\n"
+                        f"**Vwap {vwap_type}**: _{vwap_slope*100}_\n"
                     ),
                     color=self.get_color()
                 )
-                embed.set_timestamp()
+                embed.set_timestamp()  # Automatically sets the timestamp to current time
+
+                # Add Gap Information if applicable
                 if gap != 'No Gap':
                     embed.add_embed_field(name=f":warning: {gap}", value=f"_Size_: {gap_size} | _Tier_: {gap_tier}", inline=False)
                 
@@ -244,7 +239,6 @@ class IB_Crude_Alert(Base):
                 # Send the embed with the webhook
                 self.send_alert_embed(embed, username=None, avatar_url=None)
             except Exception as e:
-                logger.error(f" IB_CRUDE | process_product | Product: {product_name} | Error sending Discord message: {e}")
+                logger.error(f" IB_CRUDE | process_product | Product: {self.product_name} | Error sending Discord message: {e}")
         except Exception as e:
-            logger.error(f" IB_CRUDE | process_product | Product: {product_name} | Error processing: {e}")
-            
+            logger.error(f" IB_RUDE | process_product | Product: {self.product_name} | Error processing: {e}")

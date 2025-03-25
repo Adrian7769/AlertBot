@@ -65,8 +65,8 @@ class Gap_Check_Equity(Base):
     # ---------------------- Alert Preparation ------------------------- #
     def send_alert(self):
         threads = []
-        for product_name in ['ES', 'NQ', 'RTY']:
-            thread = threading.Thread(target=self.process_product, args=(product_name,))
+        for self.product_name in ['ES', 'NQ', 'RTY']:
+            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
             thread.start()
             threads.append(thread)
             time.sleep(1)
@@ -77,16 +77,17 @@ class Gap_Check_Equity(Base):
 
     def process_product(self, product_name):
         try:
-            variables = self.fetch_latest_variables(product_name)
+            self.product_name = product_name
+            variables = self.fetch_latest_variables(self.product_name)
             if not variables:
-                logger.error(f" GAP_EQUITY | process_product | Product: {product_name} |  Note: No data available ")
+                logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} |  Note: No data available ")
                 return
             
             # Variables (Round All Variables) 
-            prior_close = round(variables.get(f'{product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{product_name}_PRIOR_LOW'), 2)
+            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
+            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
+            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
+            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
             
             # Implied volatility specific to the product
             if product_name == 'ES':
@@ -96,9 +97,9 @@ class Gap_Check_Equity(Base):
             elif product_name == 'RTY':
                 impvol = config.rty_impvol
             else:
-                raise ValueError(f" GAP_EQUITY | process_product | Note: {product_name}")
+                raise ValueError(f" GAP_EQUITY | process_product | Note: {self.product_name}")
             
-            color = self.product_color.get(product_name)
+            color = self.product_color.get(self.product_name)
             current_time = datetime.now(self.est).strftime('%H:%M:%S')
             
             # Calculations
@@ -118,7 +119,7 @@ class Gap_Check_Equity(Base):
                 # Build the Discord Embed
                 try:
                     # Title Construction with Emojis
-                    embed_title = f":large_{color}_square: **{product_name} - Context Alert - Gap** :large_{color}_square:"
+                    embed_title = f":large_{color}_square: **{self.product_name} - Context Alert - Gap** :large_{color}_square:"
                     embed = DiscordEmbed(
                         title=embed_title,
                         description=(
@@ -136,8 +137,8 @@ class Gap_Check_Equity(Base):
                     # Send the embed with the webhook
                     self.send_alert_embed(embed, username=None, avatar_url=None)
                 except Exception as e:
-                    logger.error(f" GAP_EQUITY | process_product | Product: {product_name} | Error sending Discord message: {e}")
+                    logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} | Error sending Discord message: {e}")
             else:
-                logger.info(f" GAP_EQUITY | process_product | Product: {product_name} | Note: No Gap detected, message not sent.")
+                logger.info(f" GAP_EQUITY | process_product | Product: {self.product_name} | Note: No Gap detected, message not sent.")
         except Exception as e:
-            logger.error(f" GAP_EQUITY | process_product | Product: {product_name} | Error processing: {e}")
+            logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} | Error processing: {e}")
