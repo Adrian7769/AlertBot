@@ -52,7 +52,7 @@ class FileChangeHandler(FileSystemEventHandler):
             else:
                 self.last_processed[filepath] = current_time
 
-            logger.debug(f" FileChange | Note: {filepath} modified")
+            #logger.debug(f" FileChange | Note: {filepath} modified")
 
             try:
                 task = next((t for t in self.files if os.path.abspath(t["filepath"]) == filepath), None)
@@ -69,15 +69,16 @@ class FileChangeHandler(FileSystemEventHandler):
                         for condition in self.conditions:
                             if file_name in condition["required_files"]:
                                 self.updated_conditions[condition["name"]].add(file_name)
-                                logger.debug(f" FileChange | Condition: {condition['name']} | CurrentQueue: {self.updated_conditions[condition['name']]}")
+                                #logger.debug(f" FileChange | Condition: {condition['name']} | CurrentQueue: {self.updated_conditions[condition['name']]}")
                                 if self.updated_conditions[condition["name"]] == set(condition["required_files"]):
                                     if condition["name"] not in self.conditions_in_queue:
                                         self.processing_queue.put(condition)
                                         self.conditions_in_queue.add(condition["name"])
-                                        logger.debug(f" FileChange | Condition: {condition['name']} | Note: All Required Files")
+                                        #logger.debug(f" FileChange | Condition: {condition['name']} | Note: All Required Files")
                                         self.updated_conditions[condition["name"]] = set()
                                     else:
-                                        logger.debug(f" FileChange | Condition: {condition['name']} | Note: Already In Queue")
+                                        pass
+                                        #logger.debug(f" FileChange | Condition: {condition['name']} | Note: Already In Queue")
                 else:
                     logger.warning(f" FileChange | FilePath: {event.src_path} | Note: No task found for file")
                     
@@ -116,16 +117,17 @@ class FileChangeHandler(FileSystemEventHandler):
                             in_range = True
                             break
                     if not in_range:
-                        logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within any specified time window")
+                        #logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within any specified time window")
                         continue
                 else:
                     start_time = condition.get("start_time")
                     end_time = condition.get("end_time")
                     if start_time and end_time:
                         if not self.is_now_in_time_range(start_time, end_time, now):
-                            logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within the time range")
+                            #logger.debug(f" FileChange | Condition: {condition_name} | Note: Not within the time range")
                             continue
                     else:
+                        pass
                         logger.warning(f" FileChange | Condition: {condition_name} | Note: No time range specified for condition. Proceeding with processing.")
 
                 logger.debug(f" FileChange | Condition: {condition_name} | Processing: {required_files}")
@@ -155,7 +157,7 @@ class FileChangeHandler(FileSystemEventHandler):
                 function_instance = function_class(product_name, variables)
                 function_instance.check()
 
-                logger.debug(f" FileChange | Condition: {condition_name} | Note: Completed Processing")
+                #logger.debug(f" FileChange | Condition: {condition_name} | Note: Completed Processing")
             except Exception as e:
                 logger.error(f" FileChange | Condition: {condition['name']} | Note: Error processing condition: {e}")
             finally:

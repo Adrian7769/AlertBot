@@ -49,7 +49,16 @@ class IBGW(Base):
         self.cl_impvol = config.cl_impvol 
         
         self.exp_rng = self.exp_range() 
-
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("IBGW: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"IBGW: Error rounding value {value}: {e}")
+            return 0
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def prior_day(self):
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
@@ -252,19 +261,38 @@ class IBGW(Base):
 
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
+        def log_condition(condition, description):
+            logger.debug(f"IBGW | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
         # Direction Based Logic
         if self.direction == "short":
-            self.ib_ext_half = self.day_low >= self.ib_low - 0.5 * (self.ib_high-self.ib_low)
+            self.ib_ext_half = log_condition(
+                self.day_low >= self.ib_low - 0.5 * (self.ib_high - self.ib_low),
+                "Direction short: day_low >= ib_low - 0.5*(ib_high - ib_low)"
+            )
         elif self.direction == "long":
-            self.ib_ext_half = self.day_high <= self.ib_high + 0.5 * (self.ib_high-self.ib_low)
+            self.ib_ext_half = log_condition(
+                self.day_high <= self.ib_high + 0.5 * (self.ib_high - self.ib_low),
+                "Direction long: day_high <= ib_high + 0.5*(ib_high - ib_low)"
+            )
+
         # Driving Input
-        logic = (
-            self.ib_high - self.ib_low / self.ib_atr <= 0.85
-            and
-            self.ib_ext_half
-            )    
-        logger.debug(f" IBGW | input | Product: {self.product_name} | LOGIC: {logic}")
+        cond1 = log_condition(
+            self.ib_high - self.ib_low / self.ib_atr <= 0.85,
+            "Driving Input: (ib_high - ib_low/ib_atr) <= 0.85"
+        )
+        cond2 = log_condition(
+            self.ib_ext_half,
+            "Driving Input: ib_ext_half"
+        )
+
+        logic = cond1 and cond2
+
+        logger.debug(f"IBGW | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
+                    f"COND1: {cond1} | COND2: {cond2}")
         return logic
+
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):

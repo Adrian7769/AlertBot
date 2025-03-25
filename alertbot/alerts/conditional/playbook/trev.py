@@ -42,6 +42,16 @@ class TREV(Base):
         self.delta = self.total_delta()
         self.exp_rng = self.exp_range() 
         self.gap, self.gap_tier, self.gap_size = self.gap_info()
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("TREV: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"TREV: Error rounding value {value}: {e}")
+            return 0        
 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
@@ -133,31 +143,57 @@ class TREV(Base):
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
-        
+        def log_condition(condition, description):
+            logger.debug(f"TREV | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
         self.used_atr = self.ib_high - self.ib_low
         self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-        
+
         # Direction Based Logic
         if self.direction == "short":
-            self.several_dir_days = self.prior_low > self.prior_prior_high # Gap Between Sessions
-            self.vpoc_location = self.prior_vpoc > self.prior_low + 0.33 * (self.prior_high - self.prior_low)
-            self.ab_vwap = self.cpl < self.eth_vwap
+            self.several_dir_days = log_condition(
+                self.prior_low > self.prior_prior_high,
+                "several_dir_days (short): prior_low > prior_prior_high"
+            )
+            self.vpoc_location = log_condition(
+                self.prior_vpoc > self.prior_low + 0.33 * (self.prior_high - self.prior_low),
+                "vpoc_location (short): prior_vpoc > (prior_low + 0.33*(prior_high - prior_low))"
+            )
+            self.ab_vwap = log_condition(
+                self.cpl < self.eth_vwap,
+                "ab_vwap (short): cpl < eth_vwap"
+            )
         elif self.direction == "long":
-            self.several_dir_days = self.prior_high < self.prior_prior_low
-            self.vpoc_location = self.prior_vpoc < self.prior_high - 0.33 * (self.prior_high - self.prior_low)
-            self.ab_vwap = self.cpl > self.eth_vwap
-        # Driving Input
-        logic = (
-            self.several_dir_days # Prior Two Sessions with 0 Overlap
-            and self.vpoc_location # Prior Session VPOC Location
-            and self.gap_tier == "Tier_1" # Open in Tier 1 Gap
-            and self.ab_vwap # Above / Below ETH VWAP
-            and self.posture() in ["PRICE^5D^20D","PRICEv5Dv20D","PRICEv5D^20D", "PRICE^5Dv20D"] # In Postural Extreme
-            )    
-        
-        logger.debug(f" TREV | input | Product: {self.product_name} | LOGIC: {logic}")
-        
+            self.several_dir_days = log_condition(
+                self.prior_high < self.prior_prior_low,
+                "several_dir_days (long): prior_high < prior_prior_low"
+            )
+            self.vpoc_location = log_condition(
+                self.prior_vpoc < self.prior_high - 0.33 * (self.prior_high - self.prior_low),
+                "vpoc_location (long): prior_vpoc < (prior_high - 0.33*(prior_high - prior_low))"
+            )
+            self.ab_vwap = log_condition(
+                self.cpl > self.eth_vwap,
+                "ab_vwap (long): cpl > eth_vwap"
+            )
+
+        # Driving Input Conditions
+        cond1 = log_condition(self.several_dir_days, "Driving Condition 1: several_dir_days")
+        cond2 = log_condition(self.vpoc_location, "Driving Condition 2: vpoc_location")
+        cond3 = log_condition(self.gap_tier == "Tier_1", "Driving Condition 3: gap_tier == 'Tier_1'")
+        cond4 = log_condition(self.ab_vwap, "Driving Condition 4: ab_vwap")
+        cond5 = log_condition(
+            self.posture() in ["PRICE^5D^20D", "PRICEv5Dv20D", "PRICEv5D^20D", "PRICE^5Dv20D"],
+            "Driving Condition 5: posture() in valid list"
+        )
+
+        logic = cond1 and cond2 and cond3 and cond4 and cond5
+
+        logger.debug(f"TREV | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
+                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4} | COND5: {cond5}")
         return logic
+
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):

@@ -250,16 +250,16 @@ class Initialization(Base):
                 end_time = time(14, 30)
                 if start_time <= now <= end_time:
                     process_task = True 
-                    logger.debug(f" Startup | prep_data | Task: {task["name"]} | Process: {process_task}")
+                    #logger.debug(f" Startup | prep_data | Task: {task["name"]} | In Product Time Range: {process_task}")
             elif any(name in task["name"] for name in ["ES", "NQ", "RTY"]):
                 start_time = time(9, 30)
                 end_time = time(16, 0)
                 if start_time <= now <= end_time:
                     process_task = True 
-                    logger.debug(f" Startup | prep_data | Task: {task["name"]} | Process: {process_task}")
+                    #logger.debug(f" Startup | prep_data | Task: {task["name"]} | In Product Time Range: {process_task}")
             else:
                 process_task = False
-                logger.debug(f" Startup | prep_data | Task: {task["name"]} | Process: {process_task} | Note: Out of Time Range For Product")
+                #logger.debug(f" Startup | prep_data | Task: {task["name"]} | Process: {process_task} | Note: Out of Time Range For Product")
             if not process_task:
                 continue
             if task["header_row"] == 1:
@@ -286,7 +286,7 @@ class Initialization(Base):
             # Converting Columns to float
             for columns in task["columns"]:
                 data[columns] = data[columns].str.replace(',', '.').astype(float)
-            logger.debug(f" Startup | prep_data | Task: {task["name"]} | Data-Frame: \n{data.head()}")
+            #logger.debug(f" Startup | prep_data | Task: {task["name"]} | Data-Frame: \n{data.head()}")
             variables = {}
             match task["name"]:
                 case "ES_1":

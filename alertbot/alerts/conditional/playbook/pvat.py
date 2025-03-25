@@ -39,49 +39,39 @@ class PVAT(Base):
         
         self.delta = self.total_delta()
         self.exp_rng, self.exp_hi, self.exp_lo = self.exp_range() 
-
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("PVAT: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"PVAT: Error rounding value {value}: {e}")
+            return 0
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
 
-        # Calculation (product specific or Not)
         if not self.prior_close:
             logger.error(f" PVAT | exp_range | Product: {self.product_name} | Note: No Close Found")
             raise ValueError(f" PVAT | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
         
-        if self.product_name == 'ES':
-            exp_range = round(((self.prior_close * (self.es_impvol/100)) * math.sqrt(1/252)) , 2)
-            exp_hi = (self.prior_close + exp_range)
-            exp_lo = (self.prior_close - exp_range)
-            
-            logger.debug(f" PVAT | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-            return exp_range, exp_hi, exp_lo
-        
-        elif self.product_name == 'NQ':
-            exp_range = round(((self.prior_close * (self.nq_impvol/100)) * math.sqrt(1/252)) , 2)
-            exp_hi = (self.prior_close + exp_range)
-            exp_lo = (self.prior_close - exp_range)
-            
-            logger.debug(f" PVAT | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-            return exp_range, exp_hi, exp_lo
-        
-        elif self.product_name == 'RTY':
-            exp_range = round(((self.prior_close * (self.rty_impvol/100)) * math.sqrt(1/252)) , 2)
-            exp_hi = (self.prior_close + exp_range)
-            exp_lo = (self.prior_close - exp_range)
-        
-            logger.debug(f" PVAT | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-            return exp_range, exp_hi, exp_lo
-        
-        elif self.product_name == 'CL':
-            exp_range = round(((self.prior_close * (self.cl_impvol/100)) * math.sqrt(1/252)) , 2)
-            exp_hi = (self.prior_close + exp_range)
-            exp_lo = (self.prior_close - exp_range)
-            
-            logger.debug(f" PVAT | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-            return exp_range, exp_hi, exp_lo
-        
-        else:
+        impvol = {
+            'ES': self.es_impvol,
+            'NQ': self.nq_impvol,
+            'RTY': self.rty_impvol,
+            'CL': self.cl_impvol
+        }.get(self.product_name)
+
+        if impvol is None:
             raise ValueError(f" PVAT | exp_range | Product: {self.product_name} | Note: Unknown Product")
+
+        exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
+        exp_hi = self.safe_round(self.prior_close + exp_range)
+        exp_lo = self.safe_round(self.prior_close - exp_range)
+        
+        logger.debug(f" PVAT | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
+        return exp_range, exp_hi, exp_lo
         
     def total_delta(self):
 
@@ -93,33 +83,39 @@ class PVAT(Base):
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
-        
+        def log_condition(condition, description):
+            logger.debug(f" PVAT | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
         self.used_atr = self.ib_high - self.ib_low
         self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-        
+
         # Direction Based Logic
         if self.direction == "short":
-            self.atr_condition = abs(self.ib_low - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl < self.orl
+            self.atr_condition = log_condition(abs(self.ib_low - self.p_vpoc) <= self.remaining_atr,
+                                                "ATR Condition for short: abs(ib_low - p_vpoc) <= remaining_atr")
+            self.or_condition = log_condition(self.cpl < self.orl,
+                                            "OR Condition for short: cpl < orl")
         elif self.direction == "long":
-            self.atr_condition = abs(self.ib_high - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl > self.orh
-            
-        # Driving Input
-        logic = (
-            self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15) 
-            and
-            self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10) 
-            and
-            self.atr_condition 
-            and
-            abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1 
-            and
-            self.or_condition 
-            )    
-        
-        logger.debug(f" PVAT | input | Product: {self.product_name} | LOGIC: {logic}")
-        
+            self.atr_condition = log_condition(abs(self.ib_high - self.p_vpoc) <= self.remaining_atr,
+                                                "ATR Condition for long: abs(ib_high - p_vpoc) <= remaining_atr")
+            self.or_condition = log_condition(self.cpl > self.orh,
+                                            "OR Condition for long: cpl > orh")
+
+        # Driving Input Logic
+        cond1 = log_condition(self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15),
+                            "Driving Condition 1: p_low - (exp_rng*0.15) <= day_open <= p_high + (exp_rng*0.15)")
+        cond2 = log_condition(self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10),
+                            "Driving Condition 2: p_low + (exp_rng*0.10) <= cpl <= p_high - (exp_rng*0.10)")
+        cond3 = log_condition(self.atr_condition, "Driving Condition 3: ATR Condition")
+        cond4 = log_condition(abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1,
+                            "Driving Condition 4: abs(cpl - p_vpoc) > (exp_rng*0.1)")
+        cond5 = log_condition(self.or_condition, "Driving Condition 5: OR Condition")
+
+        logic = cond1 and cond2 and cond3 and cond4 and cond5
+
+        logger.debug(f" PVAT | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
+                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4} | COND5: {cond5}")
         return logic
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   

@@ -46,7 +46,16 @@ class IBGP(Base):
         self.rty_impvol = config.rty_impvol
         self.cl_impvol = config.cl_impvol 
         self.exp_rng = self.exp_range() 
-
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("IBGP: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"IBGP: Error rounding value {value}: {e}")
+            return 0
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def prior_day(self):
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
@@ -252,26 +261,43 @@ class IBGP(Base):
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
+        def log_condition(condition, description):
+            logger.debug(f"IBGP | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
         if self.direction == "short":
-            self.ib_ext_half = self.day_low >= self.ib_low - 0.5 * (self.ib_high-self.ib_low)
-            if self.cpl > self.day_vpoc and (self.cpl > self.eth_vwap or self.cpl > self.rth_vwap):
-                self.favorable_price = True
-            else:
-                self.favorable_price = False
+            self.ib_ext_half = log_condition(
+                self.day_low >= self.ib_low - 0.5 * (self.ib_high - self.ib_low),
+                "IB_EXT_HALF for short: day_low >= ib_low - 0.5*(ib_high - ib_low)"
+            )
+            self.favorable_price = log_condition(
+                self.cpl > self.day_vpoc and (self.cpl > self.eth_vwap or self.cpl > self.rth_vwap),
+                "Favorable Price for short: cpl > day_vpoc and (cpl > eth_vwap or cpl > rth_vwap)"
+            )
         elif self.direction == "long":
-            self.ib_ext_half = self.day_high <= self.ib_high + 0.5 * (self.ib_high-self.ib_low)
-            if self.cpl < self.day_vpoc and (self.cpl < self.eth_vwap or self.cpl < self.rth_vwap):
-                self.favorable_price = True
-            else:
-                self.favorable_price = False
-        logic = (
-            self.ib_high - self.ib_low / self.ib_atr >= 1.00
-            and self.ib_ext_half
-            and not self.one_time_framing()
-            and self.favorable_price
-            )    
-        logger.debug(f" IBGP | input | Product: {self.product_name} | LOGIC: {logic}")
+            self.ib_ext_half = log_condition(
+                self.day_high <= self.ib_high + 0.5 * (self.ib_high - self.ib_low),
+                "IB_EXT_HALF for long: day_high <= ib_high + 0.5*(ib_high - ib_low)"
+            )
+            self.favorable_price = log_condition(
+                self.cpl < self.day_vpoc and (self.cpl < self.eth_vwap or self.cpl < self.rth_vwap),
+                "Favorable Price for long: cpl < day_vpoc and (cpl < eth_vwap or cpl < rth_vwap)"
+            )
+
+        cond1 = log_condition(
+            self.ib_high - self.ib_low / self.ib_atr >= 1.00,
+            "Condition 1: (ib_high - ib_low / ib_atr) >= 1.00"
+        )
+        cond2 = log_condition(self.ib_ext_half, "Condition 2: ib_ext_half")
+        cond3 = log_condition(not self.one_time_framing(), "Condition 3: not one_time_framing()")
+        cond4 = log_condition(self.favorable_price, "Condition 4: favorable_price")
+
+        logic = cond1 and cond2 and cond3 and cond4
+
+        logger.debug(f"IBGP | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
+                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4}")
         return logic
+
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):

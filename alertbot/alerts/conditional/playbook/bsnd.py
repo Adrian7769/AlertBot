@@ -10,27 +10,29 @@ logger = logging.getLogger(__name__)
 last_alerts = {}
 last_alerts_lock = threading.Lock()
 
+# NEED TO IMPLEMENT
+
 class BSND(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
         
         # Variables (Round All Variables)
-        self.p_vpoc = round(variables.get(f'{self.product_name}_PRIOR_VPOC'), 2)
-        self.day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-        self.p_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-        self.p_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-        self.ib_atr = round(variables.get(f'{self.product_name}_IB_ATR'), 2)
-        self.euro_ibh = round(variables.get(f'{self.product_name}_EURO_IBH'), 2)
-        self.euro_ibl = round(variables.get(f'{self.product_name}_EURO_IBL'), 2)
-        self.orh = round(variables.get(f'{self.product_name}_ORH'), 2)
-        self.orl = round(variables.get(f'{self.product_name}_ORL'), 2)
-        self.eth_vwap = round(variables.get(f'{self.product_name}_ETH_VWAP'), 2)
-        self.cpl = round(variables.get(f'{self.product_name}_CPL'), 2)
-        self.total_ovn_delta = round(variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'), 2)
-        self.total_rth_delta = round(variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'), 2)
-        self.prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-        self.ib_high = round(variables.get(f'{product_name}_IB_HIGH'), 2)
-        self.ib_low = round(variables.get(f'{product_name}_IB_LOW'), 2)
+        self.p_vpoc = self.safe_round(variables.get(f'{self.product_name}_PRIOR_VPOC'))
+        self.day_open = self.safe_round(variables.get(f'{self.product_name}_DAY_OPEN'))
+        self.p_high = self.safe_round(variables.get(f'{self.product_name}_PRIOR_HIGH'))
+        self.p_low = self.safe_round(variables.get(f'{self.product_name}_PRIOR_LOW'))
+        self.ib_atr = self.safe_round(variables.get(f'{self.product_name}_IB_ATR'))
+        self.euro_ibh = self.safe_round(variables.get(f'{self.product_name}_EURO_IBH'))
+        self.euro_ibl = self.safe_round(variables.get(f'{self.product_name}_EURO_IBL'))
+        self.orh = self.safe_round(variables.get(f'{self.product_name}_ORH'))
+        self.orl = self.safe_round(variables.get(f'{self.product_name}_ORL'))
+        self.eth_vwap = variables.get(f'{self.product_name}_ETH_VWAP')
+        self.cpl = self.safe_round(variables.get(f'{self.product_name}_CPL'))
+        self.total_ovn_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'))
+        self.total_rth_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'))
+        self.prior_close = self.safe_round(variables.get(f'{self.product_name}_PRIOR_CLOSE'))
+        self.ib_high = self.safe_round(variables.get(f'{product_name}_IB_HIGH'))
+        self.ib_low = self.safe_round(variables.get(f'{product_name}_IB_LOW'))
         
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
@@ -39,11 +41,19 @@ class BSND(Base):
         
         self.delta = self.total_delta()
         self.exp_rng, self.exp_hi, self.exp_lo = self.exp_range() 
-
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("BSND: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"BSND: Error rounding value {value}: {e}")
+            return 0
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def exp_range(self):
-
-        # Calculation (product specific or Not)
+        
         if not self.prior_close:
             logger.error(f" BSND | exp_range | Product: {self.product_name} | Note: No Close Found")
             raise ValueError(f" BSND | exp_range | Product: {self.product_name} | Note: Need Close For Calculation!")
@@ -58,61 +68,61 @@ class BSND(Base):
         if impvol is None:
             raise ValueError(f"BSND | exp_range | Product: {self.product_name} | Note: Unknown Product")
 
-        exp_range = round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)), 2)
-        exp_hi = round(self.prior_close + exp_range, 2)
-        exp_lo = round(self.prior_close - exp_range, 2)
+        exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
+        exp_hi = self.safe_round(self.prior_close + exp_range)
+        exp_lo = self.safe_round(self.prior_close - exp_range)
         
         logger.debug(f" BSND | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
         return exp_range, exp_hi, exp_lo
         
         
     def total_delta(self):
-
-        # Calculation (Product Specific or Not)        
         total_delta = self.total_ovn_delta + self.total_rth_delta
-        
         logger.debug(f" BSND | total_delta | TOTAL_DELTA: {total_delta}")
         return total_delta   
     
 # ---------------------------------- Driving Input Logic ------------------------------------ #   
     def input(self):
-        
+        def log_condition(condition, description):
+            logger.debug(f"BSND | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
         self.used_atr = self.ib_high - self.ib_low
         self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-        
+
         # Direction Based Logic
         if self.direction == "short":
-            self.atr_condition = abs(self.ib_low - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl < self.orl
+            self.atr_condition = log_condition(abs(self.ib_low - self.p_vpoc) <= self.remaining_atr,
+                                                "ATR Condition for short: abs(ib_low - p_vpoc) <= remaining_atr")
+            self.or_condition = log_condition(self.cpl < self.orl,
+                                            "OR Condition for short: cpl < orl")
         elif self.direction == "long":
-            self.atr_condition = abs(self.ib_high - self.p_vpoc) <= self.remaining_atr
-            self.or_condition = self.cpl > self.orh
-            
-        # Driving Input
-        logic = (
-            self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15) 
-            and
-            self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10) 
-            and
-            self.atr_condition 
-            and
-            abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1 
-            and
-            self.or_condition 
-            )    
-        
-        logger.debug(f" BSND | input | Product: {self.product_name} | LOGIC: {logic}")
-        
+            self.atr_condition = log_condition(abs(self.ib_high - self.p_vpoc) <= self.remaining_atr,
+                                                "ATR Condition for long: abs(ib_high - p_vpoc) <= remaining_atr")
+            self.or_condition = log_condition(self.cpl > self.orh,
+                                            "OR Condition for long: cpl > orh")
+
+        # Driving Input Logic
+        cond1 = log_condition(self.p_low - (self.exp_rng * 0.15) <= self.day_open <= self.p_high + (self.exp_rng * 0.15),
+                            "Driving Condition 1: p_low - (exp_rng*0.15) <= day_open <= p_high + (exp_rng*0.15)")
+        cond2 = log_condition(self.p_low + (self.exp_rng * 0.10) <= self.cpl <= self.p_high - (self.exp_rng * 0.10),
+                            "Driving Condition 2: p_low + (exp_rng*0.10) <= cpl <= p_high - (exp_rng*0.10)")
+        cond3 = log_condition(self.atr_condition, "Driving Condition 3: ATR Condition")
+        cond4 = log_condition(abs(self.cpl - self.p_vpoc) > self.exp_rng * 0.1,
+                            "Driving Condition 4: abs(cpl - p_vpoc) > (exp_rng*0.1)")
+        cond5 = log_condition(self.or_condition, "Driving Condition 5: OR Condition")
+
+        logic = cond1 and cond2 and cond3 and cond4 and cond5
+
+        logger.debug(f"BSND | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | "
+                    f"COND1: {cond1} | COND2: {cond2} | COND3: {cond3} | COND4: {cond4} | COND5: {cond5}")
         return logic
+
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
-        
-        # Update current time
         self.current_datetime = datetime.now(self.est)
         self.current_time = self.current_datetime.time()
-        
-        # Define time windows based on product type
         if self.product_name == 'CL':
             start_time = self.crude_pvat_start
             end_time = self.crude_ib
@@ -124,8 +134,6 @@ class BSND(Base):
         else:
             logger.warning(f" BSND | time_window | Product: {self.product_name} | No time window defined.")
             return False  
-        
-        # Check if current time is within the window
         if start_time <= self.current_time <= end_time:
             logger.debug(f" BSND | time_window | Product: {self.product_name} | Within Window: {self.current_time}.")
             return True

@@ -37,6 +37,16 @@ class TRCT(Base):
         self.rty_impvol = config.rty_impvol
         self.cl_impvol = config.cl_impvol 
         self.exp_rng = self.exp_range() 
+        
+    def safe_round(self, value, digits=2):
+        if value is None:
+            logger.error("TRCT: Missing value for rounding; defaulting to 0.")
+            return 0
+        try:
+            return round(value, digits)
+        except Exception as e:
+            logger.error(f"TRCT: Error rounding value {value}: {e}")
+            return 0        
 
 # ---------------------------------- Specific Calculations ------------------------------------ #   
     def prior_day(self):
@@ -94,6 +104,7 @@ class TRCT(Base):
             day_type = "Other"
         logger.debug(f" TRCT | prior_day | Prior Day Type: {day_type}")
         return day_type
+    
     def exp_range(self):
         if not self.prior_close:
             logger.error(f" TRCT | exp_range | Product: {self.product_name} | Note: No Close Found")
@@ -773,8 +784,16 @@ class TRCT(Base):
             return False
 
     def input(self):
-        logic = self.trend_day() or self.strong_trending()
-        logger.debug(f" TRCT | input | Product: {self.product_name} | Trend Day: {self.trend_day}, Strong Trending: {self.strong_trending}, Final Logic: {logic}")
+        def log_condition(condition, description):
+            logger.debug(f"TRCT | input | Product: {self.product_name} | {description} --> {condition}")
+            return condition
+
+        trend_day_result = log_condition(self.trend_day(), "Trend Day Condition (self.trend_day())")
+        strong_trending_result = log_condition(self.strong_trending(), "Strong Trending Condition (self.strong_trending())")
+        
+        logic = trend_day_result or strong_trending_result
+
+        logger.debug(f"TRCT | input | Product: {self.product_name} | FINAL_LOGIC: {logic} | Trend Day: {trend_day_result} | Strong Trending: {strong_trending_result}")
         return logic
 
 # ---------------------------------- Opportunity Window ------------------------------------ #   
