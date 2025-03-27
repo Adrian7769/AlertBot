@@ -971,7 +971,7 @@ class Initialization(Base):
                     # ----- Current Session ---- #
                     current_period_datetimes = {
                         label: datetime.combine(latest_date, period_time)
-                        for label, period_time in period_equity.items()
+                        for label, period_time in period_crude.items()
                     }
                     for period_label, specific_datetime in current_period_datetimes.items():    
                         if specific_datetime in data.index:

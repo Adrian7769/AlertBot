@@ -55,10 +55,8 @@ class DATR(Base):
         if impvol is None:
             raise ValueError(f" DATR | exp_range | Product: {self.product_name} | Note: Unknown Product")
         exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
-        exp_hi = self.safe_round(self.prior_close + exp_range)
-        exp_lo = self.safe_round(self.prior_close - exp_range)
-        logger.debug(f" DATR | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range} | EXP_HI: {exp_hi} | EXP_LO: {exp_lo}")
-        return exp_range, exp_hi, exp_lo
+        logger.debug(f" DATR | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
+        return exp_range
     def total_delta(self):      
         total_delta = self.total_ovn_delta + self.total_rth_delta
         logger.debug(f" DATR | total_delta | Product: {self.product_name} | TOTAL_DELTA: {total_delta}")

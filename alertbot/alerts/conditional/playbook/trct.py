@@ -380,7 +380,6 @@ class TRCT(Base):
             if val > stop + epsilon:
                 break
             yield_val = round(val, 10)
-            logger.debug(f"TRCT | float_range Product: {self.product_name} | yield: {yield_val}")
             yield yield_val
 
     def single_prints(self, finished_periods):
