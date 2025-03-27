@@ -15,20 +15,17 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import os
 
-#                Necessary Improvements for 3/17/25
+#                Necessary Improvements for 3/26/25
 # ------------------------------------------------------------ #
 # Optimization!
-# Finish the Playbook - Develop More!
+# Finish the Playbook This Weekend Then Optimization
 # ------------------------------------------------------------ #
 
 def main():
     start_time = time.time()
-    
     setup_logging()
     logger = logging.getLogger(__name__)
-    
     initialization = Initialization()
-    
     logger.debug(" Main | Note: Fetching External Data\n")
     # ------------------------- Startup Processes ------------------------------ #
     es_impvol, nq_impvol, rty_impvol, cl_impvol = initialization.grab_impvol(external_impvol)
@@ -77,7 +74,6 @@ def main():
     )
     scheduler.start()
     logger.info("APScheduler started.")
-     
     # ---------------------- Start Monitoring Files ----------------------------- #
     logger.info(" Main | Note: Press Enter To Start Monitoring...")
     input("")
