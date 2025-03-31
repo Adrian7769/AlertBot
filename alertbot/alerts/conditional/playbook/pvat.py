@@ -153,11 +153,7 @@ class PVAT(Base):
                 if self.direction != last_alert: 
                     logger.info(f" PVAT | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Logic For c_within_atr 
-                    if self.atr_condition: 
-                        self.c_within_atr = "x" 
-                    else:
-                        self.c_within_atr = "  "
+                    self.c_within_atr = "x"
                     # Logic For c_orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:

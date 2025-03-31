@@ -41,7 +41,7 @@ class TREV(Base):
         
         self.delta = self.total_delta()
         self.exp_rng = self.exp_range() 
-        self.gap, self.gap_tier, self.gap_size = self.gap_info()
+        self.gap_tier, self.gap, self.gap_size = self.gap_info()
         
     def safe_round(self, value, digits=2):
         if value is None:

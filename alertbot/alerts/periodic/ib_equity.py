@@ -156,7 +156,7 @@ class IB_Equity_Alert(Base):
     def send_alert(self):
         threads = []
         for self.product_name in ['ES', 'NQ', 'RTY']:
-            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
+            thread = threading.Thread(target=self.process_product, args=(self.product_name))
             thread.start()
             threads.append(thread)
             time.sleep(1)

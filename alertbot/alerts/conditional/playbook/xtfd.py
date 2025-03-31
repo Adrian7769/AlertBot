@@ -373,8 +373,8 @@ class XTFD(Base):
             f"CRITICAL2: remaining_range({self.remaining_range}) >= 0.75 * exp_rng({self.exp_rng})"
         )
         crit3 = log_condition(
-            self.ib_low < self.day_vpoc < self.ib_low,
-            f"CRITICAL3: ib_low({self.ib_low}) < day_vpoc({self.day_vpoc}) < ib_low({self.ib_low})"
+            self.ib_low < self.day_vpoc < self.ib_high,
+            f"CRITICAL3: ib_low({self.ib_low}) < day_vpoc({self.day_vpoc}) < ib_high({self.ib_high})"
         )
         crit5 = log_condition(
             abs(self.cpl - self.day_vpoc) > 0.35 * (self.day_high - self.day_low),

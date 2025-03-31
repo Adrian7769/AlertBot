@@ -267,8 +267,8 @@ class IBGW(Base):
                 f"CRITICAL1: day_high({self.day_high}) <= ib_high({self.ib_high}) + 0.5*(ib_high({self.ib_high}) - ib_low({self.ib_low}))"
             )
         crit2 = log_condition(
-            self.ib_high - self.ib_low / self.ib_atr <= 0.85,
-            f"CRITICAL2: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) <= 0.85"
+            (self.ib_high - self.ib_low) / self.ib_atr <= 0.85,
+            f"CRITICAL2: ((ib_high({self.ib_high}) - ib_low({self.ib_low}))/ib_atr({self.ib_atr})) <= 0.85"
         )
         logic = self.crit1 and crit2
         logger.debug(f"IBGW | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "

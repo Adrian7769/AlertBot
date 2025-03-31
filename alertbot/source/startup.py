@@ -307,6 +307,8 @@ class Initialization(Base):
                     variables['ES_RVOL'] = float(data.iloc[0]['[ID6.SG1] R_Vol'])
                     variables['ES_CUMULATIVE_RVOL'] = float(data.iloc[0]['[ID6.SG2] R_Vol_Cumulative'])
                     variables['ES_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
+                    variables['ES_PRIOR_PRIOR_HIGH'] = float(data.iloc[14]['[ID8.SG2] Prior_High'])
+                    variables['ES_PRIOR_PRIOR_LOW'] = float(data.iloc[14]['[ID8.SG3] Prior_Low'])                     
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
                     
@@ -527,6 +529,8 @@ class Initialization(Base):
                     variables['NQ_RVOL'] = float(data.iloc[0]['[ID6.SG1] R_Vol'])
                     variables['NQ_CUMULATIVE_RVOL'] = float(data.iloc[0]['[ID6.SG2] R_Vol_Cumulative'])
                     variables['NQ_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
+                    variables['NQ_PRIOR_PRIOR_HIGH'] = float(data.iloc[14]['[ID8.SG2] Prior_High'])
+                    variables['NQ_PRIOR_PRIOR_LOW'] = float(data.iloc[14]['[ID8.SG3] Prior_Low'])                     
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
                     
@@ -746,6 +750,8 @@ class Initialization(Base):
                     variables['RTY_RVOL'] = float(data.iloc[0]['[ID6.SG1] R_Vol'])
                     variables['RTY_CUMULATIVE_RVOL'] = float(data.iloc[0]['[ID6.SG2] R_Vol_Cumulative'])
                     variables['RTY_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
+                    variables['RTY_PRIOR_PRIOR_HIGH'] = float(data.iloc[14]['[ID8.SG2] Prior_High'])
+                    variables['RTY_PRIOR_PRIOR_LOW'] = float(data.iloc[14]['[ID8.SG3] Prior_Low'])                    
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
                     
@@ -965,6 +971,8 @@ class Initialization(Base):
                     variables['CL_RVOL'] = float(data.iloc[0]['[ID6.SG1] R_Vol'])
                     variables['CL_CUMULATIVE_RVOL'] = float(data.iloc[0]['[ID6.SG2] R_Vol_Cumulative'])
                     variables['CL_TOTAL_RTH_DELTA'] = float(data.iloc[0]['[ID4.SG4] Total_Delta'])
+                    variables['CL_PRIOR_PRIOR_HIGH'] = float(data.iloc[12]['[ID8.SG2] Prior_High'])
+                    variables['CL_PRIOR_PRIOR_LOW'] = float(data.iloc[12]['[ID8.SG3] Prior_Low'])                     
                     # ---------------------- Use Date Date Time Loc ------------------------- #
                     latest_date = data.index.max().date()
                     

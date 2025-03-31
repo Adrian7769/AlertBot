@@ -126,25 +126,25 @@ conditions = [
     },
     {
         "name": "DOGW_ES",
-        "required_files": ["ES_1", "ES_3", "ES_4", "ES_6", "ES_7"],
+        "required_files": ["ES_1", "ES_2", "ES_3", "ES_4", "ES_6", "ES_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
     },
     {
         "name": "DOGW_NQ",
-        "required_files": ["NQ_1", "NQ_3", "NQ_4", "NQ_6", "NQ_7"],
+        "required_files": ["NQ_1","NQ_2", "NQ_3", "NQ_4", "NQ_6", "NQ_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
     },
     {
         "name": "DOGW_RTY",
-        "required_files": ["RTY_1", "RTY_3", "RTY_4", "RTY_6", "RTY_7"],
+        "required_files": ["RTY_1","RTY_2", "RTY_3", "RTY_4", "RTY_6", "RTY_7"],
         "start_time": datetime_time(9, 40), 
         "end_time": datetime_time(10, 30),
     },
     {
         "name": "DOGW_CL",
-        "required_files": ["CL_1", "CL_3", "CL_4", "CL_6", "CL_7"],
+        "required_files": ["CL_1","CL_2", "CL_3", "CL_4", "CL_6", "CL_7"],
         "start_time": datetime_time(9, 10), 
         "end_time": datetime_time(10, 0),
     },
@@ -199,7 +199,7 @@ conditions = [
     {
         "name": "IBGW_CL",
         "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6", "CL_7"],
-        "start_time": datetime_time(9, 0), 
+        "start_time": datetime_time(10, 0), 
         "end_time": datetime_time(14, 30),
     },
     {
@@ -229,7 +229,7 @@ conditions = [
     {
         "name": "IBGP_CL",
         "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_6", "CL_7"],
-        "start_time": datetime_time(9, 0), 
+        "start_time": datetime_time(10, 0), 
         "end_time": datetime_time(14, 30),
     },  
     {
@@ -259,7 +259,7 @@ conditions = [
     {
         "name": "XTFD_CL",
         "required_files": ["CL_1", "CL_2", "CL_3", "CL_4", "CL_7"],
-        "start_time": datetime_time(9, 0), 
+        "start_time": datetime_time(10, 0), 
         "end_time": datetime_time(14, 30),
     }, 
     {

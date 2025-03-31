@@ -57,7 +57,7 @@ class DOGW(Base):
             logger.error(f"DOGW | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0 
     # ---------------------------------- Specific Calculations ------------------------------------ #   
-    def open_type_algorithm(self): # This probably needs to be refined!
+    def open_type_algorithm(self): 
         a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
         a_period_range = self.a_high - self.a_low
         five_pct = 0.05 * a_period_range

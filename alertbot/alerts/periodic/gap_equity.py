@@ -15,24 +15,20 @@ class Gap_Check_Equity(Base):
         
     # ---------------------- Specific Calculations ------------------------- #
     def exp_range(self, prior_close, impvol):
-        
         exp_range = round(((prior_close * (impvol / 100)) * math.sqrt(1 / 252)), 2)
-        
         return exp_range
 
     def gap_info(self, day_open, prior_high, prior_low, exp_range):
-        
         gap = ""
         gap_tier = ""
         
         if day_open > prior_high:
             gap_size = round((day_open - prior_high), 2)
             gap = "Gap Up"
-            
             if exp_range == 0:
                 gap_tier = "Undefined"  
             else:
-                gap_ratio = round((gap_size / exp_range) , 2)
+                gap_ratio = round((gap_size / exp_range), 2)
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier 1"
                 elif gap_ratio <= 0.75:
@@ -43,18 +39,16 @@ class Gap_Check_Equity(Base):
         elif day_open < prior_low:
             gap_size = round((prior_low - day_open), 2)
             gap = "Gap Down"
-            
             if exp_range == 0:
                 gap_tier = "Undefined" 
             else:
-                gap_ratio = round((gap_size / exp_range) , 2)
+                gap_ratio = round((gap_size / exp_range), 2)
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier 1"
                 elif gap_ratio <= 0.75:
                     gap_tier = "Tier 2"
                 else:
                     gap_tier = "Tier 3"
-        
         else:
             gap = "No Gap"
             gap_tier = "Tier 0"
@@ -66,7 +60,7 @@ class Gap_Check_Equity(Base):
     def send_alert(self):
         threads = []
         for self.product_name in ['ES', 'NQ', 'RTY']:
-            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
+            thread = threading.Thread(target=self.process_product, args=(self.product_name))
             thread.start()
             threads.append(thread)
             time.sleep(1)
@@ -80,14 +74,29 @@ class Gap_Check_Equity(Base):
             self.product_name = product_name
             variables = self.fetch_latest_variables(self.product_name)
             if not variables:
-                logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} |  Note: No data available ")
+                logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} | Note: No data available")
                 return
             
-            # Variables (Round All Variables) 
-            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
+            # Fetch required variable values without rounding first
+            prior_close_val = variables.get(f'{self.product_name}_PRIOR_CLOSE')
+            day_open_val = variables.get(f'{self.product_name}_DAY_OPEN')
+            prior_high_val = variables.get(f'{self.product_name}_PRIOR_HIGH')
+            prior_low_val = variables.get(f'{self.product_name}_PRIOR_LOW')
+            
+            # Check for missing variables
+            if None in (prior_close_val, day_open_val, prior_high_val, prior_low_val):
+                logger.error(
+                    f" GAP_EQUITY | process_product | Product: {self.product_name} | "
+                    f"One or more required variable values are missing: PRIOR_CLOSE={prior_close_val}, "
+                    f"DAY_OPEN={day_open_val}, PRIOR_HIGH={prior_high_val}, PRIOR_LOW={prior_low_val}"
+                )
+                return
+            
+            # Safely round the values now that we know they are not None
+            prior_close = round(prior_close_val, 2)
+            day_open = round(day_open_val, 2)
+            prior_high = round(prior_high_val, 2)
+            prior_low = round(prior_low_val, 2)
             
             # Implied volatility specific to the product
             if product_name == 'ES':
@@ -103,12 +112,8 @@ class Gap_Check_Equity(Base):
             current_time = datetime.now(self.est).strftime('%H:%M:%S')
             
             # Calculations
-            exp_range = self.exp_range(
-                prior_close, impvol
-                )
-            gap, gap_tier, gap_size = self.gap_info(
-                day_open, prior_high, prior_low, exp_range
-                )
+            exp_range = self.exp_range(prior_close, impvol)
+            gap, gap_tier, gap_size = self.gap_info(day_open, prior_high, prior_low, exp_range)
             
             if gap in ["Gap Up", "Gap Down"]:
                 direction_emojis = {
@@ -118,7 +123,6 @@ class Gap_Check_Equity(Base):
                 
                 # Build the Discord Embed
                 try:
-                    # Title Construction with Emojis
                     embed_title = f":large_{color}_square: **{self.product_name} - Context Alert - Gap** :large_{color}_square:"
                     embed = DiscordEmbed(
                         title=embed_title,
@@ -130,11 +134,7 @@ class Gap_Check_Equity(Base):
                         color=self.get_color()
                     )
                     embed.set_timestamp()  # Automatically sets the timestamp to current time
-
-                    # Add Alert Time
                     embed.add_embed_field(name=":alarm_clock: Alert Time", value=f"_{current_time}_ EST", inline=False)
-
-                    # Send the embed with the webhook
                     self.send_alert_embed(embed, username=None, avatar_url=None)
                 except Exception as e:
                     logger.error(f" GAP_EQUITY | process_product | Product: {self.product_name} | Error sending Discord message: {e}")

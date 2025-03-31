@@ -65,7 +65,7 @@ class Gap_Check_Crude(Base):
     def send_alert(self):
         threads = []
         for self.product_name in ['CL']:
-            thread = threading.Thread(target=self.process_product, args=(self.product_name,))
+            thread = threading.Thread(target=self.process_product, args=(self.product_name))
             thread.start()
             threads.append(thread)
             time.sleep(1)
@@ -76,6 +76,7 @@ class Gap_Check_Crude(Base):
     # ---------------------- Alert Preparation ------------------------- #
     def process_product(self, product_name):
         try:
+            self.product_name = product_name
             variables = self.fetch_latest_variables(self.product_name)
             if not variables:
                 logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} |  Note: No data available ")
