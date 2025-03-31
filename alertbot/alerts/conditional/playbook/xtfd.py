@@ -180,7 +180,7 @@ class XTFD(Base):
         now = datetime.now(ZoneInfo('America/New_York')).time()
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
-        logger.debug(f"XTFD | vwap_touch | Product: {self.product_name} | Finished Periods: {finished_periods}")
+        logger.debug(f"XTFD | vwap_touch | Product: {self.product_name} | TPO Periods: {finished_periods}")
 
         if not finished_periods:
             logger.debug(f"XTFD vwap_touch | Product: {self.product_name} | No finished periods. Returning False.")
@@ -273,46 +273,44 @@ class XTFD(Base):
                 'M': time(15, 30),
             }
             logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Using non-CL period times.")
-        
         now = datetime.now(self.est).time()
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current time: {now}")
-        
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
-        finished_periods = [p for p, t in sorted_periods if t <= now]
+        current_period = None
+        finished_periods = []
+        for i, (period, start_time) in enumerate(sorted_periods):
+            if i < len(sorted_periods) - 1:
+                next_start = sorted_periods[i+1][1]
+                if start_time <= now < next_start:
+                    current_period = period
+                    finished_periods = [p for p, t in sorted_periods[:i]]
+                    break
+            else:
+                if now >= start_time:
+                    current_period = period
+                    finished_periods = [p for p, t in sorted_periods[:i]]
+                    break
+        logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current Period: {current_period}")
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Finished periods: {finished_periods}")
-        
         if len(finished_periods) < 2:
             logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Not enough finished periods. Returning False.")
             return False
-        
         last_two = finished_periods[-2:]
         period1, period2 = last_two[0], last_two[1]
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Last two periods selected: {period1}, {period2}")
-        
         p1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
         p1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
         p2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
         p2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Prior Two Period Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
-        
         if None in (p1_high, p1_low, p2_high, p2_low):
             logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | One or more period values missing. Returning False.")
             return False
-        
         p1_high = self.safe_round(p1_high)
         p1_low = self.safe_round(p1_low)
         p2_high = self.safe_round(p2_high)
         p2_low = self.safe_round(p2_low)
         logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Prior Two Period Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
-        
-        current_period = None
-        for period, t in sorted_periods:
-            if now >= t:
-                current_period = period
-        logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | Current Period: {current_period}")
-        if current_period is None:
-            logger.debug(f"XTFD | one_time_framing | Product: {self.product_name} | No Current Period Found, Returning False")
-            return False
         current_period_high = self.variables.get(f"{self.product_name}_{current_period}_HIGH")
         current_period_low = self.variables.get(f"{self.product_name}_{current_period}_LOW")
         if current_period_high is None or current_period_low is None:
@@ -397,20 +395,20 @@ class XTFD(Base):
             close_time = self.equity_close
             if (start_time <= self.current_time <= lunch_start) or \
             (lunch_end <= self.current_time <= close_time):
-                logger.debug(f"Within equity alert window: {self.current_time}")
+                logger.debug(f"XTFD | time_window | Product: {self.product_name} | Within equity alert window: {self.current_time}")
                 return True
             else:
-                logger.debug(f"Outside equity alert window: {self.current_time}")
+                logger.debug(f"XTFD | time_window | Product: {self.product_name} | Outside equity alert window: {self.current_time}")
                 return False
         elif self.product_name == 'CL':
             if self.crude_ib <= self.current_time <= self.crude_close:
-                logger.debug(f"Within crude alert window: {self.current_time}")
+                logger.debug(f"XTFD | time_window | Product: {self.product_name} | Within crude alert window: {self.current_time}")
                 return True
             else:
-                logger.debug(f"Outside crude alert window: {self.current_time}")
+                logger.debug(f"XTFD | time_window | Product: {self.product_name} | Outside crude alert window: {self.current_time}")
                 return False
         else:
-            logger.warning(f"No time window defined for product: {self.product_name}")
+            logger.warning(f"XTFD | time_window | Product: {self.product_name} | No time window defined for product")
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
@@ -507,7 +505,7 @@ class XTFD(Base):
                 else:
                     logger.debug(f" XTFD | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.debug(f" XTFD | check | Product: {self.product_name} | Note: Condition Not Met")
+            logger.debug(f" XTFD | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 

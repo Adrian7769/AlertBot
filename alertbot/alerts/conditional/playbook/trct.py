@@ -166,7 +166,7 @@ class TRCT(Base):
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
 
-        logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | Finished Periods: {finished_periods}")
+        logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | TPO Periods: {finished_periods}")
 
         # --- LONG DIRECTION ---
         if self.direction == "long":
@@ -243,15 +243,21 @@ class TRCT(Base):
 
             # CRITICAL7: RTH VPOC must be within the range of the last finished or current period.
             if len(finished_periods) >= 2:
-                prior_period = finished_periods[-2]
-                current_period = finished_periods[-1]
-                prior_low_val = self.variables.get(f"{self.product_name}_{prior_period}_LOW")
-                current_high_val = self.variables.get(f"{self.product_name}_{current_period}_HIGH")
-                if prior_low_val is not None and current_high_val is not None:
-                    prior_low_val = self.safe_round(prior_low_val)
-                    current_high_val = self.safe_round(current_high_val)
-                    condition7 = (prior_low_val < self.day_vpoc < current_high_val)
-                    logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: {prior_low_val} < day_vpoc({self.day_vpoc}) < {current_high_val} --> {condition7}")
+                period1 = finished_periods[-2]
+                period2 = finished_periods[-1]
+                period1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
+                period1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
+                period2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
+                period2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
+                if None not in (period1_high, period1_low, period2_high, period2_low):
+                    period1_high = self.safe_round(period1_high)
+                    period1_low = self.safe_round(period1_low)
+                    period2_high = self.safe_round(period2_high)
+                    period2_low = self.safe_round(period2_low)
+                    high_range = max(period1_high, period2_high)
+                    low_range = min(period1_low, period2_low)
+                    condition7 = (low_range < self.day_vpoc < high_range)
+                    logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: Day VPOC ({self.day_vpoc}) within range ({low_range} - {high_range}) --> {condition7}")
                 else:
                     condition7 = False
                     logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: Insufficient period data for VPOC range check --> {condition7}")
@@ -340,15 +346,21 @@ class TRCT(Base):
 
             # CRITICAL7: RTH VPOC must be within the range of the last finished or current period.
             if len(finished_periods) >= 2:
-                prior_period = finished_periods[-2]
-                current_period = finished_periods[-1]
-                prior_high_val = self.variables.get(f"{self.product_name}_{prior_period}_HIGH")
-                current_low_val = self.variables.get(f"{self.product_name}_{current_period}_LOW")
-                if prior_high_val is not None and current_low_val is not None:
-                    prior_high_val = self.safe_round(prior_high_val)
-                    current_low_val = self.safe_round(current_low_val)
-                    condition7 = (current_low_val < self.day_vpoc < prior_high_val)
-                    logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: {current_low_val} < day_vpoc({self.day_vpoc}) < {prior_high_val} --> {condition7}")
+                period1 = finished_periods[-2]
+                period2 = finished_periods[-1]
+                period1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
+                period1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
+                period2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
+                period2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
+                if None not in (period1_high, period1_low, period2_high, period2_low):
+                    period1_high = self.safe_round(period1_high)
+                    period1_low = self.safe_round(period1_low)
+                    period2_high = self.safe_round(period2_high)
+                    period2_low = self.safe_round(period2_low)
+                    high_range = max(period1_high, period2_high)
+                    low_range = min(period1_low, period2_low)
+                    condition7 = (low_range < self.day_vpoc < high_range)
+                    logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: Day VPOC ({self.day_vpoc}) within range ({low_range} - {high_range}) --> {condition7}")
                 else:
                     condition7 = False
                     logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL7: Insufficient period data for VPOC range check --> {condition7}")
@@ -500,7 +512,6 @@ class TRCT(Base):
                 after the extension sub-period.
             6) Single prints must be present.
         """
-        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | INIT")
         if self.product_name == "CL":
             period_times = {
                 'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
@@ -520,7 +531,7 @@ class TRCT(Base):
         now = datetime.now(ZoneInfo('America/New_York')).time()
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
-        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Finished Periods: {finished_periods}")
+        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | TPO Periods: {finished_periods}")
 
         if not finished_periods:
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | No finished periods. Returning False.")
@@ -591,7 +602,7 @@ class TRCT(Base):
                     continue
                 period_vwap = self.safe_round(period_vwap)
                 if p_low <= period_vwap:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} low({p_low}) <= vwap({period_vwap}). Failing condition3.")
+                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} low({p_low}) <= vwap({period_vwap}). Failing CRITICAL3.")
                     condition3 = False
                     break
 
@@ -621,10 +632,10 @@ class TRCT(Base):
                             one_time_count += 1
                             prev_high = cur_high
                             prev_low = cur_low
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF +1 => {one_time_count} (period {period}).")
+                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF +1 => {one_time_count} during (period {period}).")
                         else:
                             one_time_count = 0
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 (period {period}).")
+                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 during (period {period}).")
             condition5 = (one_time_count >= 3)
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 3 --> {condition5}")
 
@@ -915,7 +926,7 @@ class TRCT(Base):
                 else:
                     logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition Not Met")
+            logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         

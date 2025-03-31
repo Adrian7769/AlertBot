@@ -315,7 +315,7 @@ class DOGW(Base):
                 else:
                     logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Condition Not Met")
+            logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Condition(s) Not Met")
     
     # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):

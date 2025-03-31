@@ -451,9 +451,9 @@ class Initialization(Base):
                                     variables['ES_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
                                     variables['ES_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'D':
-                                    variables['ES_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
-                                    variables['ES_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
-                                    variables['ES_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                    variables['ES_ETH_VWAP_D'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['ES_ETH_TOP_1_D'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['ES_ETH_BOTTOM_1_D'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'E':
                                     variables['ES_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
                                     variables['ES_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
@@ -670,9 +670,9 @@ class Initialization(Base):
                                     variables['NQ_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
                                     variables['NQ_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'D':
-                                    variables['NQ_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
-                                    variables['NQ_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
-                                    variables['NQ_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                    variables['NQ_ETH_VWAP_D'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['NQ_ETH_TOP_1_D'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['NQ_ETH_BOTTOM_1_D'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'E':
                                     variables['NQ_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
                                     variables['NQ_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
@@ -889,9 +889,9 @@ class Initialization(Base):
                                     variables['RTY_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
                                     variables['RTY_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'D':
-                                    variables['RTY_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
-                                    variables['RTY_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
-                                    variables['RTY_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                    variables['RTY_ETH_VWAP_D'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['RTY_ETH_TOP_1_D'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['RTY_ETH_BOTTOM_1_D'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'E':
                                     variables['RTY_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
                                     variables['RTY_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
@@ -1096,9 +1096,9 @@ class Initialization(Base):
                                     variables['CL_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
                                     variables['CL_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'D':
-                                    variables['CL_ETH_VWAP_C'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
-                                    variables['CL_ETH_TOP_1_C'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
-                                    variables['CL_ETH_BOTTOM_1_C'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
+                                    variables['CL_ETH_VWAP_D'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
+                                    variables['CL_ETH_TOP_1_D'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])
+                                    variables['CL_ETH_BOTTOM_1_D'] = float(data.loc[specific_datetime]['[ID7.SG3] Bottom_1'])                                       
                                 case 'E':
                                     variables['CL_ETH_VWAP_E'] = float(data.loc[specific_datetime]['[ID7.SG1] ETH_VWAP'])
                                     variables['CL_ETH_TOP_1_E'] = float(data.loc[specific_datetime]['[ID7.SG2] Top_1'])

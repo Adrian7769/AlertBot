@@ -45,31 +45,31 @@ def main():
     # Schedule Econ Alert at 8:45 AM EST every day
     scheduler.add_job(
         economic_alert.send_alert,
-        trigger=CronTrigger(hour=11, minute=15, timezone=est),
+        trigger=CronTrigger(hour=8, minute=45, timezone=est),
         name='Economic Alert'
     )
     # Schedule Gap Check Equity 9:30 AM EST every day
     scheduler.add_job(
         gap_check_equity_alert.send_alert,
-        trigger=CronTrigger(hour=11, minute=15,second=5, timezone=est),
+        trigger=CronTrigger(hour=9, minute=30,second=5, timezone=est),
         name='Gap Check Equity'
     )      
     # Schedule Gap Check Crude at 9:00 AM EST every day
     scheduler.add_job(
         gap_check_crude_alert.send_alert,
-        trigger=CronTrigger(hour=11, minute=15, second=6, timezone=est),
+        trigger=CronTrigger(hour=9, minute=0, second=6, timezone=est),
         name='Gap Check Crude'
     )    
     # Schedule IB Equity Alert at 10:30 AM EST every day
     scheduler.add_job(
         ib_equity_alert.send_alert,
-        trigger=CronTrigger(hour=11, minute=15, second=1, timezone=est),
+        trigger=CronTrigger(hour=10, minute=30, second=1, timezone=est),
         name='IB Equity Alert'
     )
     # Schedule IB Crude Alert at 10:00 AM EST every day
     scheduler.add_job(
         ib_crude_alert.send_alert,
-        trigger=CronTrigger(hour=11, minute=15, second=1, timezone=est),
+        trigger=CronTrigger(hour=10, minute=30, second=1, timezone=est),
         name='IB Crude Alert'
     )
     scheduler.start()

@@ -216,6 +216,7 @@ class TREV(Base):
         elif self.day_open < self.prior_low:
             self.direction = "long"
         else:
+            logger.debug(f" TREV | check | Product: {self.product_name} | Note: Open In Range; Not In Play, Returning.")
             return # Open In Range, So Not In Play
     
         # Driving Input
@@ -253,7 +254,7 @@ class TREV(Base):
                 else:
                     logger.debug(f" TREV | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition Not Met")
+            logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 

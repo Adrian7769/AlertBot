@@ -210,7 +210,7 @@ class HVNR(Base):
                 else:
                     logger.debug(f" HVNR | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.info(f" HVNR | check | Product: {self.product_name} | Note: Condition Not Met")
+            logger.info(f" HVNR | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
