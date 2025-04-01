@@ -25,8 +25,20 @@ class DOGW(Base):
         self.orl = self.safe_round(variables.get(f'{self.product_name}_ORL'))
         self.a_high = self.safe_round(variables.get(f'{product_name}_A_HIGH'))
         self.a_low = self.safe_round(variables.get(f'{product_name}_A_LOW'))
-        self.b_high = self.safe_round(variables.get(f'{product_name}_B_HIGH'))
-        self.b_low = self.safe_round(variables.get(f'{product_name}_B_LOW'))
+        
+        # Conditionally round B period data only if the current time is at or past the B period start
+        if self.product_name == 'CL':
+            b_period_start_time = time(9, 30)
+        else:
+            b_period_start_time = time(10, 0)
+        current_time = datetime.now(self.est).time()
+        if current_time >= b_period_start_time:
+            self.b_high = self.safe_round(variables.get(f'{product_name}_B_HIGH'))
+            self.b_low = self.safe_round(variables.get(f'{product_name}_B_LOW'))
+        else:
+            self.b_high = 0
+            self.b_low = 0
+
         self.cpl = self.safe_round(variables.get(f'{self.product_name}_CPL'))
         self.total_ovn_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_OVN_DELTA'))
         self.total_rth_delta = self.safe_round(variables.get(f'{self.product_name}_TOTAL_RTH_DELTA'))
@@ -56,8 +68,10 @@ class DOGW(Base):
         except Exception as e:
             logger.error(f"DOGW | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0 
+
     # ---------------------------------- Specific Calculations ------------------------------------ #   
     def open_type_algorithm(self): 
+        # Calculate A period statistics
         a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
         a_period_range = self.a_high - self.a_low
         five_pct = 0.05 * a_period_range
@@ -72,88 +86,147 @@ class DOGW(Base):
         bottom_15 = self.a_low + fifteen_pct
         bottom_25 = self.a_low + twentyfive_pct
         open_type = "Wait" 
-        
+
+        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                    f"Computed A Period Values: a_high={self.a_high}, a_low={self.a_low}, "
+                    f"a_period_mid={a_period_mid}, a_period_range={a_period_range}, "
+                    f"top_0={top_0}, top_5={top_5}, top_15={top_15}, top_25={top_25}, "
+                    f"bottom_0={bottom_0}, bottom_5={bottom_5}, bottom_15={bottom_15}, bottom_25={bottom_25}")
+
+        # Get current time from EST
         self.current_datetime = datetime.now(self.est)
         self.current_time = self.current_datetime.time()
-        
+        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                    f"Current Time: {self.current_time}")
+
+        # Determine B period start time based on product
         if self.product_name == 'CL':
             b_period_start_time = time(9, 30)  
         else:
             b_period_start_time = time(10, 0)  
-            
+        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                    f"B Period Start Time: {b_period_start_time}")
+
         b_period_active = self.current_time >= b_period_start_time
+        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                    f"B Period Active: {b_period_active}")
+
         overlap_pct = 0
-        
         if b_period_active and self.b_high > 0 and self.b_low > 0:
             overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
             total_range = self.day_high - self.day_low
             overlap_pct = overlap / total_range if total_range > 0 else 0
-            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Overlap: {overlap} | Total Range: {total_range} | Overlap %: {overlap_pct}")
+            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                        f"B Period Data: b_high={self.b_high}, b_low={self.b_low}, "
+                        f"day_high={self.day_high}, prior_high={self.prior_high}, "
+                        f"day_low={self.day_low}, prior_low={self.prior_low} | "
+                        f"Overlap={overlap}, Total Range={total_range}, Overlap %={overlap_pct}")
         else:
             if b_period_active:
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | B period data not yet available (b_high or b_low is 0).")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"B Period Active but missing data: b_high={self.b_high}, b_low={self.b_low}")
+            else:
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"B Period Not Active (current_time={self.current_time} < required={b_period_start_time})")
+
+        # Evaluate conditions based on whether B period is active or not
         if not b_period_active:
+            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                        f"Evaluating A Period Conditions with day_open={self.day_open}")
             if self.day_open == self.a_high:
                 open_type = "OD v"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OD v")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"Condition: day_open == a_high ({self.day_open} == {self.a_high}) => Open Type: {open_type}")
             elif self.day_open == self.a_low:
                 open_type = "OD ^"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OD ^")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"Condition: day_open == a_low ({self.day_open} == {self.a_low}) => Open Type: {open_type}")
             elif top_5 < self.day_open < top_0:
                 open_type = "OTD v"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD v")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"Condition: top_5 < day_open < top_0 ({top_5} < {self.day_open} < {top_0}) => Open Type: {open_type}")
             elif bottom_0 < self.day_open < bottom_5:
                 open_type = "OTD ^"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD ^")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"Condition: bottom_0 < day_open < bottom_5 ({bottom_0} < {self.day_open} < {bottom_5}) => Open Type: {open_type}")
             else:
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: Wait (A period no specific open type)")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"No A Period condition met; defaulting to Wait")
         else:
+            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                        f"Evaluating B Period Conditions with day_open={self.day_open}")
             if self.b_high == 0 and self.b_low == 0:
                 open_type = "Wait"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | B period data not available yet. Open type set to Wait.")
+                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                            f"B Period data is zero (b_high={self.b_high}, b_low={self.b_low}); Open Type set to Wait")
             else:
                 if self.day_open == self.a_high:
                     open_type = "OD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OD v")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: day_open == a_high ({self.day_open} == {self.a_high}) => Open Type: {open_type}")
                 elif self.day_open == self.a_low:
                     open_type = "OD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OD ^")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: day_open == a_low ({self.day_open} == {self.a_low}) => Open Type: {open_type}")
                 elif top_5 < self.day_open < top_0:
                     open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD v")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: top_5 < day_open < top_0 ({top_5} < {self.day_open} < {top_0}) => Open Type: {open_type}")
                 elif bottom_0 < self.day_open < bottom_5:
                     open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD ^")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: bottom_0 < day_open < bottom_5 ({bottom_0} < {self.day_open} < {bottom_5}) => Open Type: {open_type}")
                 elif top_15 < self.day_open <= top_5 and self.b_high < a_period_mid:
                     open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD v (top_15 < day_open <= top_5 and b_high < a_period_mid)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: top_15 < day_open <= top_5 ({top_15} < {self.day_open} <= {top_5}) and "
+                                f"b_high < a_period_mid ({self.b_high} < {a_period_mid}) => Open Type: {open_type}")
                 elif bottom_5 < self.day_open <= bottom_15 and self.b_low > a_period_mid:
                     open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD ^ (bottom_5 < day_open <= bottom_15 and b_low > a_period_mid)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: bottom_5 < day_open <= bottom_15 ({bottom_5} < {self.day_open} <= {bottom_15}) and "
+                                f"b_low > a_period_mid ({self.b_low} > {a_period_mid}) => Open Type: {open_type}")
                 elif top_25 < self.day_open <= top_15 and self.b_high < bottom_25:
                     open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD v (top_25 < day_open <= top_15 and b_high < bottom_25)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: top_25 < day_open <= top_15 ({top_25} < {self.day_open} <= {top_15}) and "
+                                f"b_high < bottom_25 ({self.b_high} < {bottom_25}) => Open Type: {open_type}")
                 elif bottom_15 <= self.day_open < bottom_25 and self.b_low > top_25:
                     open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: OTD ^ (bottom_15 <= day_open < bottom_25 and b_low > top_25)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: bottom_15 <= day_open < bottom_25 ({bottom_15} <= {self.day_open} < {bottom_25}) and "
+                                f"b_low > top_25 ({self.b_low} > {top_25}) => Open Type: {open_type}")
                 elif self.day_open > top_25 and self.b_low > a_period_mid:
                     open_type = "ORR ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: ORR ^ (day_open > top_25 and b_low > a_period_mid)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: day_open > top_25 ({self.day_open} > {top_25}) and "
+                                f"b_low > a_period_mid ({self.b_low} > {a_period_mid}) => Open Type: {open_type}")
                 elif self.day_open < bottom_25 and self.b_high < a_period_mid:
                     open_type = "ORR v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | Condition met: ORR v (day_open < bottom_25 and b_high < a_period_mid)")
+                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                f"Condition: day_open < bottom_25 ({self.day_open} < {bottom_25}) and "
+                                f"b_high < a_period_mid ({self.b_high} < {a_period_mid}) => Open Type: {open_type}")
                 else:
                     if overlap_pct >= 0.25:
                         open_type = "OAIR"
+                        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                    f"Condition: overlap_pct >= 0.25 ({overlap_pct} >= 0.25) => Open Type: {open_type}")
                     elif overlap_pct < 0.25:
                         if self.day_open > self.prior_high:
                             open_type = "OAOR ^"
+                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                        f"Condition: day_open > prior_high ({self.day_open} > {self.prior_high}) => Open Type: {open_type}")
                         elif self.day_open < self.prior_low:
                             open_type = "OAOR v"
+                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                        f"Condition: day_open < prior_low ({self.day_open} < {self.prior_low}) => Open Type: {open_type}")
                         else:
-                            open_type = "OAIR"        
+                            open_type = "OAIR"
+                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
+                                        f"No clear criteria met; defaulting to OAIR => Open Type: {open_type}")
         logger.debug(f"DOGW | open_type_algorithm | Determined Open Type: {open_type} | Product: {self.product_name}")
-        return open_type    
+        return open_type
+  
         
     def exp_range(self):
 
@@ -242,71 +315,104 @@ class DOGW(Base):
     # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
         
+        # Determine Direction based on Open Type with Detailed Logging
         if self.opentype == "OAIR":
             logger.debug(f"DOGW | check | Product: {self.product_name} | Open type is OAIR; returning False.")
             return False
         elif self.opentype in ["OD v", "OTD v", "OAOR v", "ORR v"]:
             self.direction = "short"
+            logger.debug(f"DOGW | check | Product: {self.product_name} | DIR_LOGIC: opentype({self.opentype}) indicates short")
         elif self.opentype in ["OD ^", "OTD ^", "OAOR ^", "ORR ^"]:
             self.direction = "long"
+            logger.debug(f"DOGW | check | Product: {self.product_name} | DIR_LOGIC: opentype({self.opentype}) indicates long")
         else:
             logger.debug(f"DOGW | check | Product: {self.product_name} | Open type not recognized; returning False.")
             return False
-        
+
         self.color = "red" if self.direction == "short" else "green"
-    
-        # Driving Input
+
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f"DOGW | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f"DOGW | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Logic 40% Atr Left
-                    if self.atr_condition == True: 
-                        self.c_within_atr = "x" 
+                    # CRITERIA 1: 40% ATR Left
+                    if self.atr_condition == True:
+                        self.c_within_atr = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition True -> [{self.c_within_atr}]")
                     else:
                         self.c_within_atr = "  "
-                    # Logic for 50% of ETH Expected Range Left
-                    if (self.overnight_high - self.overnight_low) <= (self.exp_rng*0.5):
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition False -> [{self.c_within_atr}]")
+                    
+                    # CRITERIA 2: 50% of ETH Expected Range Left
+                    if (self.overnight_high - self.overnight_low) <= (self.exp_rng * 0.5):
                         self.c_exp_rng = "x"
-                    else: 
-                        self.c_exp_rng = "  "  
-                    # Logic For VWAP Slope
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition met -> [{self.c_exp_rng}]")
+                    else:
+                        self.c_exp_rng = "  "
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition not met -> [{self.c_exp_rng}]")
+                    
+                    # CRITERIA 3: VWAP Slope
                     self.c_vwap_slope = "  "
                     if self.direction == "short" and self.vwap_slope < -0.10:
                         self.c_vwap_slope = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: vwap_slope({self.vwap_slope}) < -0.10 -> [{self.c_vwap_slope}]")
                     elif self.direction == "long" and self.vwap_slope > 0.10:
-                        self.c_vwap_slope = "x"         
-                    # Logic For Orderflow
+                        self.c_vwap_slope = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: vwap_slope({self.vwap_slope}) > 0.10 -> [{self.c_vwap_slope}]")
+                    else:
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: VWAP slope criteria not met -> [{self.c_vwap_slope}]")
+                    
+                    # CRITERIA 4: Orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
                         self.c_orderflow = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: delta({self.delta}) < 0 for short -> [{self.c_orderflow}]")
                     elif self.direction == "long" and self.delta > 0:
                         self.c_orderflow = "x"
-                    # Logic For euro IB
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: delta({self.delta}) > 0 for long -> [{self.c_orderflow}]")
+                    else:
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: Orderflow criteria not met -> [{self.c_orderflow}]")
+                    
+                    # CRITERIA 5: Euro IB
                     self.c_euro_ib = "  "
                     if self.direction == "short" and self.cpl < self.euro_ibl:
                         self.c_euro_ib = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: cpl({self.cpl}) < euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                     elif self.direction == "long" and self.cpl > self.euro_ibh:
                         self.c_euro_ib = "x"
-                    # Logic For Above / Below Opening Range
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: cpl({self.cpl}) > euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
+                    else:
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: Euro IB criteria not met -> [{self.c_euro_ib}]")
+                    
+                    # CRITERIA 6: Above / Below Opening Range
                     self.c_or = "  "
                     if self.direction == "short" and self.cpl < self.orl:
                         self.c_or = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) < orl({self.orl}) for short -> [{self.c_or}]")
                     elif self.direction == "long" and self.cpl > self.orh:
                         self.c_or = "x"
-                    # Logic for RVOL
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) > orh({self.orh}) for long -> [{self.c_or}]")
+                    else:
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: Opening Range criteria not met -> [{self.c_or}]")
+                    
+                    # CRITERIA 7: RVOL
                     if self.rvol > 1.20:
                         self.c_rvol = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: rvol({self.rvol}) > 1.20 -> [{self.c_rvol}]")
                     else:
-                        self.c_rvol = "  "                    
-                                            
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_vwap_slope, self.c_within_atr] if condition == "x")   
+                        self.c_rvol = "  "
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: rvol({self.rvol}) <= 1.20 -> [{self.c_rvol}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [
+                        self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_vwap_slope, self.c_within_atr
+                    ] if condition == "x")
+                    logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/7")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -316,7 +422,7 @@ class DOGW(Base):
                     logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Condition(s) Not Met")
-    
+
     # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
@@ -328,14 +434,15 @@ class DOGW(Base):
                 "risk": "Below",
                 "criteria": "Above",
                 "or": "High",
-                "euro": "IBH"
-
+                "euro": "IBH",
+                "emoji_indicator": "🔼",
             },
             "short": {
                 "risk": "Above",
                 "criteria": "Below",
                 "or": "Low",
-                "euro": "IBL"
+                "euro": "IBL",
+                "emoji_indicator": "🔽",
             }
         }
 
@@ -343,7 +450,7 @@ class DOGW(Base):
         if not settings:
             raise ValueError(f"DOGW | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         
-        title = f"**{self.product_name} - Playbook Alert** - **DOGW - {self.opentype}**"
+        title = f"**{self.product_name} - Playbook Alert** - **DOGW** {settings['emoji_indicator']}"
 
         embed = DiscordEmbed(
             title=title,

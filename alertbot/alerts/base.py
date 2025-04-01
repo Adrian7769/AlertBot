@@ -63,10 +63,12 @@ class Base:
         self.equity_pvat_start = time(9, 32)
         self.crude_dogw_start = time(9, 10)
         self.equity_dogw_start = time(9, 40)
+
     def fetch_latest_variables(self, product_name):
         from alertbot.source.startup import Initialization
         all_variables = Initialization.prep_data(self.files)
-        return all_variables.get(product_name)        
+        return all_variables.get(product_name)
+
     def send_discord_embed(self, webhook_url, embed, username=None, avatar_url=None):
         if webhook_url:
             try:
@@ -78,6 +80,7 @@ class Base:
                 logger.error(f"Failed to send message to Discord webhook: {e}")
         else:
             logger.warning(f"No Discord webhook URL configured for the product '{self.product_name}'.")
+
     def send_discord_embed_with_file(self, webhook_url, embed, file_path, username=None, avatar_url=None):
         if webhook_url:
             try:
@@ -91,23 +94,31 @@ class Base:
                 logger.error(f"Failed to send embed with file to Discord webhook: {e}")
         else:
             logger.warning(f"No Discord webhook URL configured for the product '{self.product_name}'.")
-    def send_playbook_embed(self, embed, username=None, avatar_url=None):
-        logger.debug(f"Product name: {self.product_name}")
-        webhook_url = self.discord_webhooks_playbook.get(self.product_name)
+
+    # Updated send_playbook_embed accepts an optional product_name parameter.
+    def send_playbook_embed(self, embed, product_name: Optional[str] = None, username=None, avatar_url=None):
+        prod = product_name if product_name is not None else self.product_name
+        logger.debug(f"Product name for playbook embed: {prod}")
+        webhook_url = self.discord_webhooks_playbook.get(prod)
         if webhook_url:    
-            logger.debug(f"webhook {webhook_url}")
+            logger.debug(f"Webhook for playbook embed: {webhook_url}")
             self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
         else:
-            logger.error(f"No Discord Webhook Configured for {self.product_name}")
-    def send_alert_embed(self, embed, username=None, avatar_url=None):
-        logger.debug(f"Product name: {self.product_name}")
-        webhook_url = self.discord_webhooks_alert.get(self.product_name)
+            logger.error(f"No Discord Webhook Configured for {prod}")
+
+    # Updated send_alert_embed accepts an optional product_name parameter.
+    def send_alert_embed(self, embed, product_name: Optional[str] = None, username=None, avatar_url=None):
+        prod = product_name if product_name is not None else self.product_name
+        logger.debug(f"Product name for alert embed: {prod}")
+        webhook_url = self.discord_webhooks_alert.get(prod)
         if webhook_url:
-            logger.debug(f"webhook {webhook_url}")
+            logger.debug(f"Webhook for alert embed: {webhook_url}")
             self.send_discord_embed(webhook_url, embed, username=username, avatar_url=avatar_url)
         else:
-            logger.error(f"No Discord Webhook Configured for {self.product_name}")
-    def get_color(self):
+            logger.error(f"No Discord Webhook Configured for {prod}")
+
+    def get_color(self, product_name: Optional[str] = None):
+        prod = product_name if product_name is not None else self.product_name        
         color_mapping = {
             "blue": 0x3498db,
             "green": 0x2ecc71,
@@ -115,5 +126,5 @@ class Base:
             "purple": 0x9B59B6,
             "black": 0x000000
         }
-        color_name = self.product_color.get(self.product_name, "black").lower()
-        return color_mapping.get(color_name, 0x000000)    
+        color_name = self.product_color.get(prod, "black").lower()
+        return color_mapping.get(color_name, 0x000000)

@@ -15,55 +15,42 @@ class IB_Equity_Alert(Base):
         
     # ---------------------- Specific Calculations ------------------------- #
     def ib_info(self, ib_high, ib_low, ib_atr):
-        
         ib_range = round((ib_high - ib_low), 2)
         ib_vatr = round((ib_range / ib_atr), 2)
-       
         if ib_vatr > 1.1:
             ib_type = "Wide IB"
         elif ib_vatr < 0.85:
             ib_type = "Narrow IB"
         elif 0.85 <= ib_vatr <= 1.1:
             ib_type = "Average IB"
-        
         return ib_range, ib_type, round((ib_vatr*100), 2)
-
     def exp_range_info(self, prior_close, cpl, ovn_to_ibh, ovn_to_ibl, impvol):
-        
         exp_range = round(((prior_close * (impvol / 100)) * math.sqrt(1 / 252)), 2)
         exp_hi = (prior_close + exp_range)
         exp_lo = (prior_close - exp_range)
         range_used = round(((ovn_to_ibh - ovn_to_ibl) / exp_range), 2)
-
         if abs(range_used) >= 1:
             exhausted = "Exhausted"
         elif abs(range_used) <= 0.55:
             exhausted = "Below Avg"
         else:
             exhausted = "Nominal"
-
         if cpl > exp_hi:
             range_up = "Exhausted"
         else:
             range_up = round(abs((exp_hi - cpl) / (exp_range * 2) * 100), 2)
-
         if cpl < exp_lo:
             range_down = "Exhausted"
         else:
-            range_down = round(abs((exp_lo - cpl) / (exp_range * 2) * 100), 2)
-        
+            range_down = round(abs((exp_lo - cpl) / (exp_range * 2)* 100), 2)
         return exhausted, range_used*100, range_up, range_down, exp_range
-
     def gap_info(self, day_open, prior_high, prior_low, exp_range):
-        
         gap = ""
         gap_tier = ""
         gap_size = 0
-        
         if day_open > prior_high:
             gap_size = round((day_open - prior_high), 2)
             gap = "Gap Up"
-            
             if exp_range == 0:
                 gap_tier = "Undefined"  
             else:
@@ -74,11 +61,9 @@ class IB_Equity_Alert(Base):
                     gap_tier = "Tier 2"
                 else:
                     gap_tier = "Tier 3"
-        
         elif day_open < prior_low:
             gap_size = round((prior_low - day_open), 2)
             gap = "Gap Down"
-            
             if exp_range == 0:
                 gap_tier = "Undefined" 
             else:
@@ -89,18 +74,13 @@ class IB_Equity_Alert(Base):
                     gap_tier = "Tier 2"
                 else:
                     gap_tier = "Tier 3"
-        
         else:
             gap = "No Gap"
             gap_tier = "Tier 0"
             gap_size = 0
-        
         return gap, gap_tier, gap_size
-
     def posture(self, cpl, fd_vpoc, td_vpoc, exp_range):
-        
         threshold = round((exp_range * 0.68), 2)
-
         if (abs(cpl - fd_vpoc) <= threshold) and (abs(fd_vpoc - td_vpoc) <= threshold):
             posture = "PRICE=5D=20D"
         elif (cpl > fd_vpoc + threshold) and (fd_vpoc > td_vpoc + threshold):
@@ -121,15 +101,13 @@ class IB_Equity_Alert(Base):
             posture = "PRICEv5D^20D"
         else:
             posture = "Other"
-
         return posture
-        
     def open_type(self, a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low):
-        
         a_period_mid = round(((a_high + a_low) / 2), 2)
-        overlap = max(0, min(day_high, prior_high) - max(day_low, prior_low))
+        current_sub_low = min(a_low, b_low)
+        current_sub_high = max(a_high, b_high)
+        overlap = max(0, min(current_sub_high, prior_high) - max(current_sub_low, prior_low))
         total_range = day_high - day_low
-
         if day_open == a_high and (b_high < a_period_mid):
             open_type = "OD v"
         elif day_open == a_low and (b_low > a_period_mid):
@@ -150,67 +128,55 @@ class IB_Equity_Alert(Base):
             open_type = "OAOR v"
         else:
             open_type = "Other"
-
         return open_type
     # ---------------------- Alert Preparation ------------------------- #
     def send_alert(self):
         threads = []
-        for self.product_name in ['ES', 'NQ', 'RTY']:
-            thread = threading.Thread(target=self.process_product, args=(self.product_name))
+        for product_name in ['ES', 'NQ', 'RTY']:
+            thread = threading.Thread(target=self.process_product, args=(product_name,))
             thread.start()
             threads.append(thread)
             time.sleep(1)
 
-        # Optionally wait for all threads to complete
         for thread in threads:
             thread.join()
 
     def process_product(self, product_name):
         try:
-            self.product_name = product_name
-            variables = self.fetch_latest_variables(self.product_name)
+            local_product = product_name
+            variables = self.fetch_latest_variables(local_product)
             if not variables:
-                logger.error(f" IB_EQUITY | process_product | Product: {self.product_name} |  Note: No data available ")
+                logger.error(f" IB_EQUITY | process_product | Product: {local_product} |  Note: No data available ")
                 return
             
-            # Variables (Round All Variables) 
-            ib_atr = round(variables.get(f'{self.product_name}_IB_ATR'), 2)
-            ib_high = round(variables.get(f'{self.product_name}_IB_HIGH'), 2)
-            ib_low = round(variables.get(f'{self.product_name}_IB_LOW'), 2)
-            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-            cpl = round(variables.get(f'{self.product_name}_CPL'), 2)
-            fd_vpoc = round(variables.get(f'{self.product_name}_5D_VPOC'), 2)
-            td_vpoc = round(variables.get(f'{self.product_name}_20D_VPOC'), 2)
-            ovn_to_ibh = round(variables.get(f'{self.product_name}_OVNTOIB_HI'), 2)
-            ovn_to_ibl = round(variables.get(f'{self.product_name}_OVNTOIB_LO'), 2)
-            a_high = round(variables.get(f'{self.product_name}_A_HIGH'), 2)
-            a_low = round(variables.get(f'{self.product_name}_A_LOW'), 2)
-            b_high = round(variables.get(f'{self.product_name}_B_HIGH'), 2)
-            b_low = round(variables.get(f'{self.product_name}_B_LOW'), 2)
-            orh = round(variables.get(f'{self.product_name}_ORH'), 2)
-            orl = round(variables.get(f'{self.product_name}_ORL'), 2)
-            rvol = round(variables.get(f'{self.product_name}_CUMULATIVE_RVOL'), 2)
-            overnight_high = round(variables.get(f'{self.product_name}_OVNH'), 2)
-            overnight_low = round(variables.get(f'{self.product_name}_OVNL'), 2)
-            day_high = round(variables.get(f'{self.product_name}_DAY_HIGH'), 2)
-            day_low = round(variables.get(f'{self.product_name}_DAY_LOW'), 2) 
-            vwap_slope = (variables.get(f'{self.product_name}_VWAP_SLOPE'))
+            ib_atr = round(variables.get(f'{local_product}_IB_ATR'), 2)
+            ib_high = round(variables.get(f'{local_product}_IB_HIGH'), 2)
+            ib_low = round(variables.get(f'{local_product}_IB_LOW'), 2)
+            prior_close = round(variables.get(f'{local_product}_PRIOR_CLOSE'), 2)
+            day_open = round(variables.get(f'{local_product}_DAY_OPEN'), 2)
+            prior_high = round(variables.get(f'{local_product}_PRIOR_HIGH'), 2)
+            prior_low = round(variables.get(f'{local_product}_PRIOR_LOW'), 2)
+            cpl = round(variables.get(f'{local_product}_CPL'), 2)
+            fd_vpoc = round(variables.get(f'{local_product}_5D_VPOC'), 2)
+            td_vpoc = round(variables.get(f'{local_product}_20D_VPOC'), 2)
+            ovn_to_ibh = round(variables.get(f'{local_product}_OVNTOIB_HI'), 2)
+            ovn_to_ibl = round(variables.get(f'{local_product}_OVNTOIB_LO'), 2)
+            a_high = round(variables.get(f'{local_product}_A_HIGH'), 2)
+            a_low = round(variables.get(f'{local_product}_A_LOW'), 2)
+            b_high = round(variables.get(f'{local_product}_B_HIGH'), 2)
+            b_low = round(variables.get(f'{local_product}_B_LOW'), 2)
+            orh = round(variables.get(f'{local_product}_ORH'), 2)
+            orl = round(variables.get(f'{local_product}_ORL'), 2)
+            rvol = round(variables.get(f'{local_product}_CUMULATIVE_RVOL'), 2)
+            overnight_high = round(variables.get(f'{local_product}_OVNH'), 2)
+            overnight_low = round(variables.get(f'{local_product}_OVNL'), 2)
+            day_high = round(variables.get(f'{local_product}_DAY_HIGH'), 2)
+            day_low = round(variables.get(f'{local_product}_DAY_LOW'), 2) 
+            impvol = config.cl_impvol
+            vwap_slope = variables.get(f'{local_product}_VWAP_SLOPE')
 
-            # Implied volatility specific to the product
-            if self.product_name == 'ES':
-                impvol = config.es_impvol
-            elif self.product_name == 'NQ':
-                impvol = config.nq_impvol
-            elif self.product_name == 'RTY':
-                impvol = config.rty_impvol
-            else:
-                raise ValueError(f" IB_EQUITY | process_product | Note: {self.product_name}")
-            
-            color = self.product_color.get(self.product_name)
-            current_time = datetime.now(self.est).strftime('%H:%M:%S')
+            color_name = self.product_color.get(local_product, "black") 
+            color_value = self.get_color(local_product)
             
             # Calculations
             ib_range, ib_type, ib_vatr = self.ib_info(
@@ -236,43 +202,36 @@ class IB_Equity_Alert(Base):
             
             # Build the Discord Embed
             try:
-                embed_title = f":large_{color}_square: **{self.product_name} - Context - IB Check-In** :loudspeaker:"
+                embed_title = f":{color_name}_large_square: **{local_product} - Context - IB Check-In** :loudspeaker:"
                 embed = DiscordEmbed(
                     title=embed_title,
                     description=(
-                        f"**Open Type**: _{open_type}_\n"
-                        f"**{ib_type}**: _{ib_range}p_ = _{round(ib_vatr, 2)}%_ of Avg\n"
-                        f"**Vwap {vwap_type}**: _{vwap_slope*100}_\n"
+                        f"**Open Type**: {open_type} \n"
+                        f"**{ib_type}**: {ib_range}p | {round(ib_vatr, 2)}% of Avg\n"
+                        f"**Vwap {vwap_type}**: {vwap_slope*100}° \n"
                     ),
-                    color=self.get_color()
+                    color=color_value
                 )
-                embed.set_timestamp()  # Automatically sets the timestamp to current time
+                embed.set_timestamp()  
 
-                # Add Gap Information if applicable
                 if gap != 'No Gap':
-                    embed.add_embed_field(name=f":warning: {gap}", value=f"_Size_: {gap_size} | _Tier_: {gap_tier}", inline=False)
-                
-                # Add Overnight Stat if applicable
+                    embed.add_embed_field(name=f":warning: {gap}", value=f"**Size**: {gap_size}p | **Tier**: {gap_tier}", inline=False)
+ 
                 if day_high < overnight_high and day_low > overnight_low:
-                    embed.add_embed_field(name=":night_with_stars: Overnight Stat", value="_In Play_", inline=False)
-                
-                # Add Rvol and Posture
-                embed.add_embed_field(name=":chart_with_upwards_trend: Rvol", value=f"_{rvol}%_", inline=True)
-                embed.add_embed_field(name=":balance_scale: Current Posture", value=f"_{posture}_", inline=True)
+                    embed.add_embed_field(name=":night_with_stars: Overnight Stat", value="In Play", inline=False)
 
-                # Expected Range Section
+                embed.add_embed_field(name=":chart_with_upwards_trend: Rvol", value=f"{rvol}%", inline=False)
+                embed.add_embed_field(name=":balance_scale: Current Posture", value=f"{posture}", inline=False)
+
                 embed.add_embed_field(name=":bar_chart: Expected Range", value=(
-                    f"**Rng Used**: _{exhausted}_ | _{range_used}%_ Used\n"
-                    f"**Range Left Up**: _{range_up}{'' if range_up == 'Exhausted' else '%'}_\n"
-                    f"**Range Left Down**: _{range_down}{'' if range_down == 'Exhausted' else '%'}_"
+                    f"**Rng Used**: {exhausted} | {range_used}% Used \n"
+                    f"**Range Left Up**: {range_up}{'' if range_up == 'Exhausted' else '%'} \n"
+                    f"**Range Left Down**: {range_down}{'' if range_down == 'Exhausted' else '%'} "
                 ), inline=False)
                 
-                # Alert Time
-                embed.add_embed_field(name=":alarm_clock: Alert Time", value=f"_{current_time}_ EST", inline=False)
-
-                # Send the embed with the webhook
-                self.send_alert_embed(embed, username=None, avatar_url=None)
+                self.send_alert_embed(embed, product_name=local_product, username=None, avatar_url=None)
+                
             except Exception as e:
-                logger.error(f" IB_EQUITY | process_product | Product: {self.product_name} | Error sending Discord message: {e}")
+                logger.error(f" IB_EQUITY | process_product | Product: {local_product} | Error sending Discord message: {e}")
         except Exception as e:
-            logger.error(f" IB_EQUITY | process_product | Product: {self.product_name} | Error processing: {e}")
+            logger.error(f" IB_EQUITY | process_product | Product: {local_product} | Error processing: {e}")

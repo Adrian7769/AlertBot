@@ -116,27 +116,29 @@ class IBGW(Base):
         logger.debug(f" IBGW | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
         return day_type
     
-    def open_type(self):
-        a_period_mid = round(((self.a_high + self.a_low) / 2), 2)
-        overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
-        total_range = self.day_high - self.day_low
-        if self.day_open == self.a_high and (self.b_high < a_period_mid):
+    def open_type(self, a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low):
+        a_period_mid = round(((a_high + a_low) / 2), 2)
+        current_sub_low = min(a_low, b_low)
+        current_sub_high = max(a_high, b_high)
+        overlap = max(0, min(current_sub_high, prior_high) - max(current_sub_low, prior_low))
+        total_range = day_high - day_low
+        if day_open == a_high and (b_high < a_period_mid):
             open_type = "OD v"
-        elif self.day_open == self.a_low and (self.b_low > a_period_mid):
+        elif day_open == a_low and (b_low > a_period_mid):
             open_type = "OD ^"
-        elif (self.day_open > a_period_mid) and (self.b_high < a_period_mid):
+        elif (day_open > a_period_mid) and (b_high < a_period_mid):
             open_type = "OTD v"
-        elif (self.day_open < a_period_mid) and (self.b_low > a_period_mid):
+        elif (day_open < a_period_mid) and (b_low > a_period_mid):
             open_type = "OTD ^"
-        elif (self.day_open > a_period_mid) and (self.b_low > a_period_mid) and (self.b_high > self.orh):
+        elif (day_open > a_period_mid) and (b_low > a_period_mid) and (b_high > orh):
             open_type = "ORR ^"
-        elif (self.day_open < a_period_mid) and (self.b_high < a_period_mid) and (self.b_low < self.orl):
+        elif (day_open < a_period_mid) and (b_high < a_period_mid) and (b_low < orl):
             open_type = "ORR v"
         elif overlap >= 0.5 * total_range:
             open_type = "OAIR"
-        elif (overlap < 0.5 * total_range) and (self.day_open >= self.prior_high):
+        elif (overlap < 0.5 * total_range) and (day_open >= prior_high):
             open_type = "OAOR ^"
-        elif (overlap < 0.5 * total_range) and (self.day_open <= self.prior_low):
+        elif (overlap < 0.5 * total_range) and (day_open <= prior_low):
             open_type = "OAOR v"
         else:
             open_type = "Other"
@@ -303,123 +305,178 @@ class IBGW(Base):
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
+        # Determine Direction with Detailed Logging
         if self.day_high > self.ib_high and self.day_low < self.ib_low:
             if self.cpl < self.ib_low:
-                self.direction = "short" 
+                self.direction = "short"
+                logger.debug(f" IBGW | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) < self.ib_low({self.ib_low}) -> short")
             elif self.cpl > self.ib_high:
-                self.direction = "long"   
+                self.direction = "long"
+                logger.debug(f" IBGW | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) > self.ib_high({self.ib_high}) -> long")
             else:
-                return False # In Middle Of IB Range While Neutral
+                logger.debug(f" IBGW | check | Product: {self.product_name} | Note: In Middle Of IB Range While Neutral, Returning.")
+                return False  # In Middle Of IB Range While Neutral
         else:
             if self.day_low < self.ib_low:
                 self.direction = "short"
+                logger.debug(f" IBGW | check | Product: {self.product_name} | DIR_LOGIC: self.day_low({self.day_low}) < self.ib_low({self.ib_low}) -> short")
             elif self.day_high > self.ib_high:
                 self.direction = "long"
+                logger.debug(f" IBGW | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> long")
             else:
-                return False # No IB Extension
-    
-        # Driving Input
+                logger.debug(f" IBGW | check | Product: {self.product_name} | Note: No IB Extension, Returning.")
+                return False  # No IB Extension
+
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" IBGW | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" IBGW | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Logic for Directional Open
-                    if self.direction == "short": 
+                    # CRITERIA 1: Directional Open
+                    if self.direction == "short":
                         if self.open_type() in ["OD v", "OTD v", "ORR v", "OAOR v"]:
-                            self.c_directional_open = "x" 
+                            self.c_directional_open = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: open_type() returned {self.open_type()} -> [{self.c_directional_open}]")
                         else:
                             self.c_directional_open = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: open_type() returned {self.open_type()} -> [{self.c_directional_open}]")
                     elif self.direction == "long":
                         if self.open_type() in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"]:
-                            self.c_directional_open = "x" 
+                            self.c_directional_open = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: open_type() returned {self.open_type()} -> [{self.c_directional_open}]")
                         else:
                             self.c_directional_open = "  "
-                    # Logic For one time framing (past 3)
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: open_type() returned {self.open_type()} -> [{self.c_directional_open}]")
+                    
+                    # CRITERIA 2: One Time Framing (past 3)
                     if self.one_time_framing():
                         self.c_otf = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: one_time_framing() True -> [{self.c_otf}]")
                     else:
                         self.c_otf = "  "
-                    # logic for clear_magnet (pull from value references and check if they are within 2x IB)
-                    if self.direction == "short": 
-                        if self.fd_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or \
-                            self.td_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or \
-                            self.prior_vpoc >= self.ib_low - (self.ib_high - self.ib_low):
-                            self.c_magnet = "x" 
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: one_time_framing() False -> [{self.c_otf}]")
+                    
+                    # CRITERIA 3: Clear Magnet
+                    if self.direction == "short":
+                        if (self.fd_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or
+                            self.td_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or
+                            self.prior_vpoc >= self.ib_low - (self.ib_high - self.ib_low)):
+                            self.c_magnet = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: One of (fd_vpoc({self.fd_vpoc}), td_vpoc({self.td_vpoc}), prior_vpoc({self.prior_vpoc})) >= (ib_low({self.ib_low}) - IB_range({self.ib_high - self.ib_low})) -> [{self.c_magnet}]")
                         else:
                             self.c_magnet = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Clear magnet criteria not met -> [{self.c_magnet}]")
                     elif self.direction == "long":
-                        if self.fd_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or \
-                            self.td_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or \
-                            self.prior_vpoc <= self.ib_high + (self.ib_high - self.ib_low):
-                            self.c_magnet = "x" 
+                        if (self.fd_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or
+                            self.td_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or
+                            self.prior_vpoc <= self.ib_high + (self.ib_high - self.ib_low)):
+                            self.c_magnet = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: One of (fd_vpoc({self.fd_vpoc}), td_vpoc({self.td_vpoc}), prior_vpoc({self.prior_vpoc})) <= (ib_high({self.ib_high}) + IB_range({self.ib_high - self.ib_low})) -> [{self.c_magnet}]")
                         else:
                             self.c_magnet = "  "
-                    # logic for not hit 1.5x IB
-                    if self.crit1 == True:
-                        self.c_ib_ext_half = "x"                     
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Clear magnet criteria not met -> [{self.c_magnet}]")
+                    
+                    # CRITERIA 4: Not Hit 1.5x IB
+                    if self.crit1:
+                        self.c_ib_ext_half = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: crit1 is True -> [{self.c_ib_ext_half}]")
                     else:
                         self.c_ib_ext_half = "  "
-                    # Logic for IB Narrow to average
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: crit1 is False -> [{self.c_ib_ext_half}]")
+                    
+                    # CRITERIA 5: IB Narrow to Average
                     if self.ib_high - self.ib_low / self.ib_atr <= 0.85:
                         self.c_narrow_ib = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) <= 0.85 -> [{self.c_narrow_ib}]")
                     else:
                         self.c_narrow_ib = "  "
-                    # Logic for 50% of Expected Range Left
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) > 0.85 -> [{self.c_narrow_ib}]")
+                    
+                    # CRITERIA 6: 50% of Expected Range Left
                     self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
                     self.remaining_range = self.exp_rng - self.used_range
                     if self.remaining_range >= 0.5 * self.exp_rng:
                         self.c_exp_rng = "  "
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) >= 0.5*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "x"
-                    # Logic for c_euro IB
-                    if self.direction == "short": 
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) < 0.5*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                    
+                    # CRITERIA 7: c_euro IB
+                    if self.direction == "short":
                         if self.cpl < self.euro_ibl:
-                            self.c_euro_ib = "x" 
+                            self.c_euro_ib = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) < euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                         else:
                             self.c_euro_ib = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) >= euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                     elif self.direction == "long":
                         if self.cpl > self.euro_ibh:
-                            self.c_euro_ib = "x" 
+                            self.c_euro_ib = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) > euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
                         else:
-                            self.c_euro_ib = "  "                     
-                    # Logic for skew in profile towards IB extreme
-                    if self.direction == "short": 
+                            self.c_euro_ib = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) <= euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
+                    
+                    # CRITERIA 8: Skew in Profile Toward IB Extreme
+                    if self.direction == "short":
                         if self.day_vpoc <= self.ib_low + round(0.33 * (self.ib_high - self.ib_low), 2):
-                            self.c_skew = "x" 
+                            self.c_skew = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) <= ib_low({self.ib_low}) + 0.33*(ib_range) -> [{self.c_skew}]")
                         else:
                             self.c_skew = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) > ib_low({self.ib_low}) + 0.33*(ib_range) -> [{self.c_skew}]")
                     elif self.direction == "long":
                         if self.day_vpoc >= self.ib_high - round(0.33 * (self.ib_high - self.ib_low), 2):
-                            self.c_skew = "x" 
+                            self.c_skew = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) >= ib_high({self.ib_high}) - 0.33*(ib_range) -> [{self.c_skew}]")
                         else:
                             self.c_skew = "  "
-                    # Logic for IB broke from composite reference, must be 5d, 20d (for now)
-                    if self.ib_low < self.fd_vpoc < self.ib_high or self.ib_low < self.td_vpoc < self.ib_high:  
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) < ib_high({self.ib_high}) - 0.33*(ib_range) -> [{self.c_skew}]")
+                    
+                    # CRITERIA 9: IB Broke from Composite Reference (5d, 20d for now)
+                    if (self.ib_low < self.fd_vpoc < self.ib_high) or (self.ib_low < self.td_vpoc < self.ib_high):
                         self.c_composite_ref = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: fd_vpoc({self.fd_vpoc}) or td_vpoc({self.td_vpoc}) within IB range ({self.ib_low}-{self.ib_high}) -> [{self.c_composite_ref}]")
                     else:
                         self.c_composite_ref = "  "
-                    # Logic for is prior session balanced
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: Composite reference criteria not met -> [{self.c_composite_ref}]")
+                    
+                    # CRITERIA 10: Prior Session Balanced (Rotational)
                     if self.prior_day() == "Rotational":
                         self.c_rotational = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() returned Rotational -> [{self.c_rotational}]")
                     else:
-                        self.c_rotational = "  "  
-                    # Logic for Noticeable Slope to VWAP
-                    if self.direction == "short": 
+                        self.c_rotational = "  "
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() did not return Rotational -> [{self.c_rotational}]")
+                    
+                    # CRITERIA 11: Noticeable Slope to VWAP
+                    if self.direction == "short":
                         if self.vwap_slope < -0.05:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: vwap_slope({self.vwap_slope}) < -0.05 -> [{self.c_vwap_slope}]")
                         else:
                             self.c_vwap_slope = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: vwap_slope({self.vwap_slope}) >= -0.05 -> [{self.c_vwap_slope}]")
                     elif self.direction == "long":
                         if self.vwap_slope > 0.05:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: vwap_slope({self.vwap_slope}) > 0.05 -> [{self.c_vwap_slope}]")
                         else:
-                            self.c_vwap_slope = "  "                                        
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_directional_open, self.c_otf, self.c_euro_ib, self.c_magnet, self.c_ib_ext_half, self.c_narrow_ib, self.c_exp_rng, self.c_skew, self.c_composite_ref,self.c_rotational,self.c_vwap_slope] if condition == "x")   
+                            self.c_vwap_slope = "  "
+                            logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: vwap_slope({self.vwap_slope}) <= 0.05 -> [{self.c_vwap_slope}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [
+                        self.c_directional_open, self.c_otf, self.c_euro_ib, self.c_magnet, self.c_ib_ext_half,
+                        self.c_narrow_ib, self.c_exp_rng, self.c_skew, self.c_composite_ref, self.c_rotational,
+                        self.c_vwap_slope
+                    ] if condition == "x")
+                    logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/11")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -429,6 +486,7 @@ class IBGW(Base):
                     logger.debug(f" IBGW | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.debug(f" IBGW | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 
@@ -436,14 +494,14 @@ class IBGW(Base):
         
         direction_settings = {
             "long": {
-                "dir_indicator": "^",
                 "destination": "IBH",
                 "mid": "Above",
+                "emoji_indicator": "🔼",
             },
             "short": {
-                "dir_indicator": "v",
                 "destination": "IBL",
                 "mid": "Below",
+                "emoji_indicator": "🔽",
             }
         }
  
@@ -474,7 +532,7 @@ class IBGW(Base):
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **IBGW {settings['dir_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **IBGW** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,

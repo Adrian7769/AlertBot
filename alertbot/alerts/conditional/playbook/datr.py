@@ -162,76 +162,89 @@ class DATR(Base):
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
+        # Determine Direction with Detailed Logging
         self.direction = None
         if self.prior_day_type == 'Trend ^':
             self.direction = 'Higher'
-            logger.debug(f" DATR | check | Product: {self.product_name} | DIR_LOGIC: self.prior_day_type({self.prior_day_type}) == 'Trend ^' | Direction: {self.direction}")        
+            logger.debug(f"DATR | check | Product: {self.product_name} | DIR_LOGIC: prior_day_type({self.prior_day_type}) == 'Trend ^' -> Direction: {self.direction}")
         elif self.prior_day_type == 'Trend v':
             self.direction = 'Lower'
-            logger.debug(f" DATR | check | Product: {self.product_name} | DIR_LOGIC: self.prior_day_type({self.prior_day_type}) == 'Trend v' | Direction: {self.direction}")
+            logger.debug(f"DATR | check | Product: {self.product_name} | DIR_LOGIC: prior_day_type({self.prior_day_type}) == 'Trend v' -> Direction: {self.direction}")
         else:
-            logger.debug(f" DATR | check | Product: {self.product_name} | Note: No Prior Trend Day, Returning.")
+            logger.debug(f"DATR | check | Product: {self.product_name} | Note: No Prior Trend Day; Returning.")
             return False
+
         self.color = "red" if self.direction == "Lower" else "green"
+
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
-                logger.debug(f" DATR | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                if self.direction != last_alert: 
-                    logger.info(f" DATR | check | Product: {self.product_name} | Note: Condition Met")      
-                    # Logic for c_trend
-                    self.c_trend = "x" 
-                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: self.prior_day_type({self.prior_day_type}) in ['Trend v', 'Trend ^'] | [{self.c_trend}]")                           
-                    # Logic for c_open
+                last_alert = last_alerts.get(self.product_name)
+                logger.debug(f"DATR | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
+                if self.direction != last_alert:
+                    logger.info(f"DATR | check | Product: {self.product_name} | Note: Condition Met")
+                    
+                    # CRITERIA 1: Trend Criterion (c_trend)
+                    self.c_trend = "x"
+                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: prior_day_type({self.prior_day_type}) in ['Trend ^','Trend v'] -> [{self.c_trend}]")
+                    
+                    # CRITERIA 2: Open Range Criterion (c_open)
                     if self.prior_low < self.day_open < self.prior_high:
                         self.c_open = "x"
                     else:
                         self.c_open = "  "
-                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: self.prior_low < self.day_open < self.prior_high | [{self.c_open}]")    
-                    # Logic For c_orderflow
+                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: prior_low({self.prior_low}) < day_open({self.day_open}) < prior_high({self.prior_high}) -> [{self.c_open}]")
+                    
+                    # CRITERIA 3: Orderflow Criterion (c_orderflow)
                     self.c_orderflow = "  "
                     if self.direction == "Lower" and self.delta < 0:
                         self.c_orderflow = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: self.delta < 0 | [{self.c_orderflow}]")   
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: delta({self.delta}) < 0 for Lower -> [{self.c_orderflow}]")
                     elif self.direction == "Higher" and self.delta > 0:
                         self.c_orderflow = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: self.delta > 0 | [{self.c_orderflow}]") 
-                    # Logic for c_vwap
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: delta({self.delta}) > 0 for Higher -> [{self.c_orderflow}]")
+                    
+                    # CRITERIA 4: VWAP Criterion (c_vwap)
                     self.c_vwap = "  "
                     if self.direction == "Lower" and self.cpl < self.eth_vwap:
                         self.c_vwap = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.cpl < self.eth_vwap | [{self.c_vwap}]") 
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: cpl({self.cpl}) < eth_vwap({self.eth_vwap}) for Lower -> [{self.c_vwap}]")
                     elif self.direction == "Higher" and self.cpl > self.eth_vwap:
                         self.c_vwap = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.cpl > self.eth_vwap | [{self.c_vwap}]") 
-                    # Logic for c_prior_vpoc
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: cpl({self.cpl}) > eth_vwap({self.eth_vwap}) for Higher -> [{self.c_vwap}]")
+                    
+                    # CRITERIA 5: Prior VPOC Criterion (c_prior_vpoc)
                     self.c_prior_vpoc = "  "
                     if self.direction == "Lower" and self.prior_vpoc < self.prior_mid:
                         self.c_prior_vpoc = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: self.prior_vpoc < self.prior_mid | [{self.c_prior_vpoc}]") 
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: prior_vpoc({self.prior_vpoc}) < prior_mid({self.prior_mid}) for Lower -> [{self.c_prior_vpoc}]")
                     elif self.direction == "Higher" and self.prior_vpoc > self.prior_mid:
                         self.c_prior_vpoc = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: self.prior_vpoc > self.prior_mid | [{self.c_prior_vpoc}]") 
-                    # Logic for c_hwb
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: prior_vpoc({self.prior_vpoc}) > prior_mid({self.prior_mid}) for Higher -> [{self.c_prior_vpoc}]")
+                    
+                    # CRITERIA 6: HWB Criterion (c_hwb)
                     self.c_hwb = "  "
                     if self.direction == "Lower" and self.cpl < self.prior_mid:
                         self.c_hwb = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.cpl < self.prior_mid | [{self.c_hwb}]") 
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) < prior_mid({self.prior_mid}) for Lower -> [{self.c_hwb}]")
                     elif self.direction == "Higher" and self.cpl > self.prior_mid:
                         self.c_hwb = "x"
-                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.cpl > self.prior_mid | [{self.c_hwb}]") 
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_trend, self.c_orderflow, self.c_open, self.c_vwap, self.c_prior_vpoc, self.c_hwb] if condition == "x")   
-                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/6") 
+                        logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) > prior_mid({self.prior_mid}) for Higher -> [{self.c_hwb}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [self.c_trend, self.c_orderflow, self.c_open, self.c_vwap, self.c_prior_vpoc, self.c_hwb] if condition == "x")
+                    logger.debug(f"DATR | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/6")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
                     except Exception as e:
-                        logger.error(f" DATR | check | Product: {self.product_name} | Note: Failed to send Slack alert: {e}")
+                        logger.error(f"DATR | check | Product: {self.product_name} | Note: Failed to send Slack alert: {e}")
                 else:
-                    logger.debug(f" DATR | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
+                    logger.debug(f"DATR | check | Product: {self.product_name} | Note: Alert: {self.direction} is Same")
         else:
-            logger.debug(f" DATR | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+            logger.debug(f"DATR | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         pro_color = self.product_color.get(self.product_name)
@@ -240,30 +253,28 @@ class DATR(Base):
             "Higher": {
                 "target": f"{self.prior_high}",
                 "destination": "High",
-                "pv_indicator": "^",
                 "risk": "above",
                 "trend": "higher",
-                "large": "large_",
                 "c_hwb": "Above",
                 "c_prior_vpoc": "above",
                 "c_vwap": "Above",
+                "emoji_indicator": "🔼",                
             },
             "Lower": {
                 "target": f"{self.prior_low}",
                 "destination": "Low",
-                "pv_indicator": "v",
                 "risk": "below",
                 "trend": "lower",
-                "large": "",
                 "c_hwb": "Below",
                 "c_prior_vpoc": "below",
                 "c_vwap": "Below",
+                "emoji_indicator": "🔽",                
             }
         }
         settings = direction_settings.get(self.direction)
         if not settings:
             raise ValueError(f" DATR | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
-        title = f":large_{pro_color}_square: **{self.product_name} - Playbook Alert** :{settings['large']}{self.color}_circle: **DATR {settings['pv_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **DATR** {settings['emoji_indicator']}"
         embed = DiscordEmbed(
             title=title,
             description=(

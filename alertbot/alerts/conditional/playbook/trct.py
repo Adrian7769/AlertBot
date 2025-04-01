@@ -814,110 +814,157 @@ class TRCT(Base):
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
         
-        # Define Direction
+        # Define Direction with Detailed Logging
         if self.day_low < self.ib_low:
             self.direction = "short"
+            logger.debug(f" TRCT | check | Product: {self.product_name} | DIR_LOGIC: self.day_low({self.day_low}) < self.ib_low({self.ib_low}) -> short")
         elif self.day_high > self.ib_high:
             self.direction = "long"
+            logger.debug(f" TRCT | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> long")
         elif self.day_high > self.ib_high and self.day_low < self.ib_low:
             logger.info(f" TRCT | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
             return
         else:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected")
+            logger.info(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning")
             return
+
         self.color = "red" if self.direction == "short" else "green"
         
-        # Driving Input
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" TRCT | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition Met")
                     
                     # Logic For Trend Day
-                    if self.trend_day(): 
-                        self.c_trend_day = "x" 
+                    if self.trend_day():
+                        self.c_trend_day = "x"
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: trend_day() True -> [{self.c_trend_day}]")
                     else:
-                        self.c_trend_day = "  "                    
+                        self.c_trend_day = "  "
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: trend_day() False -> [{self.c_trend_day}]")
+                    
                     # Logic For Strong Trending
-                    if self.strong_trending(): 
-                        self.c_strong_trending = "x" 
+                    if self.strong_trending():
+                        self.c_strong_trending = "x"
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: strong_trending() True -> [{self.c_strong_trending}]")
                     else:
                         self.c_strong_trending = "  "
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: strong_trending() False -> [{self.c_strong_trending}]")
+                    
                     # Logic For Acceptance Inside Trending Channel
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.trending_acceptance_s:
-                            self.c_trending_acceptance = "x" 
+                            self.c_trending_acceptance = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: trending_acceptance_s True -> [{self.c_trending_acceptance}]")
                         else:
                             self.c_trending_acceptance = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: trending_acceptance_s False -> [{self.c_trending_acceptance}]")
                     elif self.direction == "long":
                         if self.trending_acceptance_l:
-                            self.c_trending_acceptance = "x" 
+                            self.c_trending_acceptance = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: trending_acceptance_l True -> [{self.c_trending_acceptance}]")
                         else:
                             self.c_trending_acceptance = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: trending_acceptance_l False -> [{self.c_trending_acceptance}]")
+                    
                     # Logic For VWAP Strength
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.vwap_slope < -0.05:
-                            self.c_strong_vwap = "x" 
+                            self.c_strong_vwap = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) < -0.05 -> [{self.c_strong_vwap}]")
                         else:
                             self.c_strong_vwap = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) >= -0.05 -> [{self.c_strong_vwap}]")
                     elif self.direction == "long":
                         if self.vwap_slope > 0.05:
-                            self.c_strong_vwap = "x" 
+                            self.c_strong_vwap = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) > 0.05 -> [{self.c_strong_vwap}]")
                         else:
                             self.c_strong_vwap = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) <= 0.05 -> [{self.c_strong_vwap}]")
+                    
                     # Logic For One-Time-Framing
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.one_time_framing_s:
-                            self.c_otf = "x" 
+                            self.c_otf = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing_s True -> [{self.c_otf}]")
                         else:
                             self.c_otf = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing_s False -> [{self.c_otf}]")
                     elif self.direction == "long":
                         if self.one_time_framing_l:
-                            self.c_otf = "x" 
+                            self.c_otf = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing_l True -> [{self.c_otf}]")
                         else:
                             self.c_otf = "  "
-                    # Logic For Acceptance Outside of IB range
-                    if self.direction == "short": 
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing_l False -> [{self.c_otf}]")
+                    
+                    # Logic For Acceptance Outside of IB Range
+                    if self.direction == "short":
                         if self.ib_acceptance_s:
-                            self.c_iba = "x" 
+                            self.c_iba = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: ib_acceptance_s True -> [{self.c_iba}]")
                         else:
                             self.c_iba = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: ib_acceptance_s False -> [{self.c_iba}]")
                     elif self.direction == "long":
                         if self.ib_acceptance_l:
-                            self.c_iba = "x" 
+                            self.c_iba = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: ib_acceptance_l True -> [{self.c_iba}]")
                         else:
-                            self.c_iba = "  " 
+                            self.c_iba = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: ib_acceptance_l False -> [{self.c_iba}]")
+                    
                     # Logic For Within 1 EXP Move of 5D
                     if self.cpl < (self.fd_vpoc + self.exp_rng) and self.cpl > (self.fd_vpoc - self.exp_rng):
-                        self.c_fd_exp = "x" 
+                        self.c_fd_exp = "x"
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) within 1 EXP move of fd_vpoc({self.fd_vpoc}) ± exp_rng({self.exp_rng}) -> [{self.c_fd_exp}]")
                     else:
                         self.c_fd_exp = "  "
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) outside 1 EXP move of fd_vpoc({self.fd_vpoc}) ± exp_rng({self.exp_rng}) -> [{self.c_fd_exp}]")
+                    
                     # Logic For Value Following Price
                     if self.value_following_price:
                         self.c_v_fp = "x"
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: value_following_price True -> [{self.c_v_fp}]")
                     else:
                         self.c_v_fp = "  "
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: value_following_price False -> [{self.c_v_fp}]")
+                    
                     # Logic For Above / Below RTH MID
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.session_mid_s:
-                            self.c_sm = "x" 
+                            self.c_sm = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: session_mid_s True -> [{self.c_sm}]")
                         else:
                             self.c_sm = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: session_mid_s False -> [{self.c_sm}]")
                     elif self.direction == "long":
                         if self.session_mid_l:
-                            self.c_sm = "x" 
+                            self.c_sm = "x"
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: session_mid_l True -> [{self.c_sm}]")
                         else:
-                            self.c_sm = "  "  
+                            self.c_sm = "  "
+                            logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: session_mid_l False -> [{self.c_sm}]")
+                    
                     # Logic For Prior Day Was Rotational
                     if self.prior_day() == "Rotational":
-                        self.c_rotational = "x"                                                                    
+                        self.c_rotational = "x"
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() returned Rotational -> [{self.c_rotational}]")
                     else:
                         self.c_rotational = "  "
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_rotational, self.c_sm, self.c_v_fp, self.c_fd_exp, self.c_iba, self.c_otf, self.c_strong_vwap, self.c_trending_acceptance, self.c_strong_trending, self.c_trend_day] if condition == "x")   
+                        logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() did not return Rotational -> [{self.c_rotational}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [
+                        self.c_rotational, self.c_sm, self.c_v_fp, self.c_fd_exp, self.c_iba,
+                        self.c_otf, self.c_strong_vwap, self.c_trending_acceptance, self.c_strong_trending, self.c_trend_day
+                    ] if condition == "x")
+                    logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/10")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -927,6 +974,7 @@ class TRCT(Base):
                     logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
@@ -934,14 +982,15 @@ class TRCT(Base):
         
         direction_settings = {
             "long": {
-                "dir_indicator": "^",
+                "emoji_indicator": "🔼",
                 "destination": "Highs",
                 "mid": "Above",
             },
             "short": {
-                "dir_indicator": "v",
+               
                 "destination": "Lows",
                 "mid": "Below",
+                "emoji_indicator": "🔽",
             }
         }
 
@@ -959,7 +1008,7 @@ class TRCT(Base):
             else:
                 inline_text = f"Strong Slope to dVWAP \n"        
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **TRCT {settings['dir_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **TRCT** {settings['emoji_indicator']}"
 
         embed = DiscordEmbed(
             title=title,

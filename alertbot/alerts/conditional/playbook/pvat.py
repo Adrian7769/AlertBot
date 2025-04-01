@@ -139,52 +139,87 @@ class PVAT(Base):
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
         
-        # Define Direction
-        self.direction = "short" if self.cpl > self.p_vpoc else "long"
+        # Define Direction with Detailed Logging
+        if self.cpl > self.p_vpoc:
+            self.direction = "short"
+            logger.debug(f" PVAT | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) > self.p_vpoc({self.p_vpoc}) -> short")
+        else:
+            self.direction = "long"
+            logger.debug(f" PVAT | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) <= self.p_vpoc({self.p_vpoc}) -> long")
+        
         self.color = "red" if self.direction == "short" else "green"
-    
-        # Driving Input
+        
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" PVAT | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
                 
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" PVAT | check | Product: {self.product_name} | Note: Condition Met")
                     
+                    # Critical Criteria Logging
+                    
+                    # CRITERIA 1: c_within_atr
                     self.c_within_atr = "x"
-                    # Logic For c_orderflow
+                    logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: Set c_within_atr -> [{self.c_within_atr}]")
+                    
+                    # CRITERIA 2: c_orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
                         self.c_orderflow = "x"
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: self.delta({self.delta}) < 0 for short -> [{self.c_orderflow}]")
                     elif self.direction == "long" and self.delta > 0:
                         self.c_orderflow = "x"
-                    # Logic for c_euro IB
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: self.delta({self.delta}) > 0 for long -> [{self.c_orderflow}]")
+                    else:
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Orderflow criteria not met -> [{self.c_orderflow}]")
+                    
+                    # CRITERIA 3: c_euro_ib
                     self.c_euro_ib = "  "
                     if self.direction == "short" and self.cpl < self.euro_ibl:
                         self.c_euro_ib = "x"
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: self.cpl({self.cpl}) < self.euro_ibl({self.euro_ibl}) for short -> [{self.c_euro_ib}]")
                     elif self.direction == "long" and self.cpl > self.euro_ibh:
                         self.c_euro_ib = "x"
-                    # Logic for c_or
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: self.cpl({self.cpl}) > self.euro_ibh({self.euro_ibh}) for long -> [{self.c_euro_ib}]")
+                    else:
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Euro IB criteria not met -> [{self.c_euro_ib}]")
+                    
+                    # CRITERIA 4: c_or
                     self.c_or = "  "
                     if self.direction == "short" and self.cpl < self.orl:
                         self.c_or = "x"
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.cpl({self.cpl}) < self.orl({self.orl}) for short -> [{self.c_or}]")
                     elif self.direction == "long" and self.cpl > self.orh:
                         self.c_or = "x"
-                    # Logic for c_between
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.cpl({self.cpl}) > self.orh({self.orh}) for long -> [{self.c_or}]")
+                    else:
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: OR criteria not met -> [{self.c_or}]")
+                    
+                    # CRITERIA 5: c_between
                     self.c_between = "  "
                     if self.direction == "short" and self.p_vpoc < self.cpl < self.eth_vwap:
                         self.c_between = "x"
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: self.p_vpoc({self.p_vpoc}) < self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap}) for short -> [{self.c_between}]")
                     elif self.direction == "long" and self.eth_vwap < self.cpl < self.p_vpoc:
                         self.c_between = "x"
-                    # Logic for c_align
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: self.eth_vwap({self.eth_vwap}) < self.cpl({self.cpl}) < self.p_vpoc({self.p_vpoc}) for long -> [{self.c_between}]")
+                    else:
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: Between criteria not met -> [{self.c_between}]")
+                    
+                    # CRITERIA 6: c_align
                     if abs(self.eth_vwap - self.p_vpoc) <= (self.exp_rng * 0.05):
                         self.c_align = "x"
-                    else: 
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: abs(self.eth_vwap({self.eth_vwap}) - self.p_vpoc({self.p_vpoc})) <= {self.exp_rng * 0.05} -> [{self.c_align}]")
+                    else:
                         self.c_align = "  "
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_within_atr, self.c_orderflow, self.c_euro_ib, self.c_or, self.c_between, self.c_align] if condition == "x")   
+                        logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: abs(self.eth_vwap({self.eth_vwap}) - self.p_vpoc({self.p_vpoc})) > {self.exp_rng * 0.05} -> [{self.c_align}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [self.c_within_atr, self.c_orderflow, self.c_euro_ib, self.c_or, self.c_between, self.c_align] if condition == "x")
+                    logger.debug(f" PVAT | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/6")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -194,6 +229,7 @@ class PVAT(Base):
                     logger.debug(f" PVAT | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.debug(f" PVAT | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
@@ -202,18 +238,14 @@ class PVAT(Base):
         
         direction_settings = {
             "long": {
-                "pv_indicator": "^",
                 "c_euro_ib_text": "Above Euro IBH",
                 "c_or_text": "Above 30 Sec Opening Range High",
                 "emoji_indicator": "🔼",
-                "color_circle": "🔵"
             },
             "short": {
-                "pv_indicator": "v",
                 "c_euro_ib_text": "Below Euro IBL",
                 "c_or_text": "Below 30 Sec Opening Range Low",
                 "emoji_indicator": "🔽",
-                "color_circle": "🔴"
             }
         }
 
@@ -222,7 +254,7 @@ class PVAT(Base):
             raise ValueError(f" PVAT | discord_message | Note: Invalid direction '{self.direction}'")
         
         # Title Construction with Emojis
-        title = f"{settings['color_circle']} **{self.product_name} - Playbook Alert** {settings['emoji_indicator']} **PVAT {settings['pv_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **PVAT** {settings['emoji_indicator']}"
 
         embed = DiscordEmbed(
             title=title,

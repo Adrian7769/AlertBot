@@ -59,27 +59,29 @@ class XTFD(Base):
             logger.error(f"XTFD | safe_round | Product: {self.product_name} | Error rounding value {value}: {e}")
             return 0
     
-    def open_type(self):
-        a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
-        overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
-        total_range = self.day_high - self.day_low
-        if self.day_open == self.a_high and (self.b_high < a_period_mid):
+    def open_type(self, a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low):
+        a_period_mid = round(((a_high + a_low) / 2), 2)
+        current_sub_low = min(a_low, b_low)
+        current_sub_high = max(a_high, b_high)
+        overlap = max(0, min(current_sub_high, prior_high) - max(current_sub_low, prior_low))
+        total_range = day_high - day_low
+        if day_open == a_high and (b_high < a_period_mid):
             open_type = "OD v"
-        elif self.day_open == self.a_low and (self.b_low > a_period_mid):
+        elif day_open == a_low and (b_low > a_period_mid):
             open_type = "OD ^"
-        elif (self.day_open > a_period_mid) and (self.b_high < a_period_mid):
+        elif (day_open > a_period_mid) and (b_high < a_period_mid):
             open_type = "OTD v"
-        elif (self.day_open < a_period_mid) and (self.b_low > a_period_mid):
+        elif (day_open < a_period_mid) and (b_low > a_period_mid):
             open_type = "OTD ^"
-        elif (self.day_open > a_period_mid) and (self.b_low > a_period_mid) and (self.b_high > self.orh):
+        elif (day_open > a_period_mid) and (b_low > a_period_mid) and (b_high > orh):
             open_type = "ORR ^"
-        elif (self.day_open < a_period_mid) and (self.b_high < a_period_mid) and (self.b_low < self.orl):
+        elif (day_open < a_period_mid) and (b_high < a_period_mid) and (b_low < orl):
             open_type = "ORR v"
         elif overlap >= 0.5 * total_range:
             open_type = "OAIR"
-        elif (overlap < 0.5 * total_range) and (self.day_open >= self.prior_high):
+        elif (overlap < 0.5 * total_range) and (day_open >= prior_high):
             open_type = "OAOR ^"
-        elif (overlap < 0.5 * total_range) and (self.day_open <= self.prior_low):
+        elif (overlap < 0.5 * total_range) and (day_open <= prior_low):
             open_type = "OAOR v"
         else:
             open_type = "Other"
@@ -413,90 +415,136 @@ class XTFD(Base):
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
         
+        # Determine Direction Based on IB Range Logic with Logging
         if self.day_high > self.ib_high and self.day_low < self.ib_low:
             if self.cpl < self.ib_low:
-                self.direction = "long" 
+                self.direction = "long"
+                logger.debug(f" XTFD | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) < self.ib_low({self.ib_low}) -> long")
             elif self.cpl > self.ib_high:
-                self.direction = "short"   
+                self.direction = "short"
+                logger.debug(f" XTFD | check | Product: {self.product_name} | DIR_LOGIC: self.cpl({self.cpl}) > self.ib_high({self.ib_high}) -> short")
             else:
-                return False # In Middle Of IB Range While Neutral
+                logger.debug(f" XTFD | check | Product: {self.product_name} | Note: In Middle Of IB Range While Neutral, Returning.")
+                return False  # In Middle Of IB Range While Neutral
         else:
             if self.day_low < self.ib_low:
                 self.direction = "long"
+                logger.debug(f" XTFD | check | Product: {self.product_name} | DIR_LOGIC: self.day_low({self.day_low}) < self.ib_low({self.ib_low}) -> long")
             elif self.day_high > self.ib_high:
                 self.direction = "short"
+                logger.debug(f" XTFD | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> short")
             else:
-                return False # No IB Extension
-        
-        # Driving Input
+                logger.debug(f" XTFD | check | Product: {self.product_name} | Note: No IB Extension, Returning.")
+                return False  # No IB Extension
+
+        # Driving Input Check with Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" XTFD | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" XTFD | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Critical Criteria
+                    # Critical Criteria Logging
                     self.c_expected_range = "x"
+                    logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: Set c_expected_range -> [{self.c_expected_range}]")
+                    
                     self.c_no_skew = "x"
+                    logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Set c_no_skew -> [{self.c_no_skew}]")
+                    
                     self.c_wide_ib = "x"
+                    logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Set c_wide_ib -> [{self.c_wide_ib}]")
+                    
                     self.c_divergence = "x"
-                    # Logic For one Not time framing (past 3)
+                    logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: Set c_divergence -> [{self.c_divergence}]")
+                    
+                    # Logic For One Not Time Framing
                     if not self.one_time_framing():
                         self.c_not_otf = "x"
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing() False -> [{self.c_not_otf}]")
                     else:
                         self.c_not_otf = "  "
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: one_time_framing() True -> [{self.c_not_otf}]")
+                    
                     # Logic for No Slope to VWAP
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.vwap_slope > -0.03:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.vwap_slope({self.vwap_slope}) > -0.03 -> [{self.c_vwap_slope}]")
                         else:
                             self.c_vwap_slope = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.vwap_slope({self.vwap_slope}) <= -0.03 -> [{self.c_vwap_slope}]")
                     elif self.direction == "long":
                         if self.vwap_slope < 0.03:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.vwap_slope({self.vwap_slope}) < 0.03 -> [{self.c_vwap_slope}]")
                         else:
-                            self.c_vwap_slope = "  "                     
+                            self.c_vwap_slope = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: self.vwap_slope({self.vwap_slope}) >= 0.03 -> [{self.c_vwap_slope}]")
+                    
                     # Logic for VWAP Touch after IB Extension
                     if not self.vwap_touch():
                         self.c_touch_vwap = "x"
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: vwap_touch() False -> [{self.c_touch_vwap}]")
                     else:
                         self.c_touch_vwap = "  "
-                    # Logic for is prior session was a directional day
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: vwap_touch() True -> [{self.c_touch_vwap}]")
+                    
+                    # Logic for Prior Session Directional Check
                     if self.prior_day() == "Directional":
                         self.c_directional = "x"
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() returned Directional -> [{self.c_directional}]")
                     else:
-                        self.c_directional = "  "  
+                        self.c_directional = "  "
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() did not return Directional -> [{self.c_directional}]")
+                    
                     # Logic for Within 1SD of VWAP
-                    if self.direction == "short": 
+                    if self.direction == "short":
                         if self.cpl < self.top_one_eth_vwap:
-                            self.c_osd = "x" 
+                            self.c_osd = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: self.cpl({self.cpl}) < self.top_one_eth_vwap({self.top_one_eth_vwap}) -> [{self.c_osd}]")
                         else:
                             self.c_osd = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: self.cpl({self.cpl}) >= self.top_one_eth_vwap({self.top_one_eth_vwap}) -> [{self.c_osd}]")
                     elif self.direction == "long":
                         if self.cpl > self.bottom_one_eth_vwap:
-                            self.c_osd = "x" 
+                            self.c_osd = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: self.cpl({self.cpl}) > self.bottom_one_eth_vwap({self.bottom_one_eth_vwap}) -> [{self.c_osd}]")
                         else:
                             self.c_osd = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: self.cpl({self.cpl}) <= self.bottom_one_eth_vwap({self.bottom_one_eth_vwap}) -> [{self.c_osd}]")
+                    
                     # Logic for Non Directional Open
                     if self.open_type() == "OAIR":
                         self.c_non_dir_open = "x"
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: open_type() returned OAIR -> [{self.c_non_dir_open}]")
                     else:
                         self.c_non_dir_open = "  "
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: open_type() did not return OAIR -> [{self.c_non_dir_open}]")
+                    
                     # Logic For 1.5x IB Stat Complete
                     if self.direction == "short":
                         if self.day_low <= self.ib_low - 0.5 * (self.ib_high - self.ib_low):
                             self.c_ib_ext_stat = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: self.day_low({self.day_low}) <= self.ib_low({self.ib_low}) - 0.5*(self.ib_high({self.ib_high})-self.ib_low({self.ib_low})) -> [{self.c_ib_ext_stat}]")
                         else:
                             self.c_ib_ext_stat = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: self.day_low({self.day_low}) > self.ib_low({self.ib_low}) - 0.5*(self.ib_high({self.ib_high})-self.ib_low({self.ib_low})) -> [{self.c_ib_ext_stat}]")
                     elif self.direction == "long":
-                        if self.day_high >= self.ib_high + 0.5 * (self.ib_high - self.ib_low) : 
-                            self.c_ib_ext_stat = "x"    
+                        if self.day_high >= self.ib_high + 0.5 * (self.ib_high - self.ib_low):
+                            self.c_ib_ext_stat = "x"
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: self.day_high({self.day_high}) >= self.ib_high({self.ib_high}) + 0.5*(self.ib_high({self.ib_high})-self.ib_low({self.ib_low})) -> [{self.c_ib_ext_stat}]")
                         else:
-                            self.c_ib_ext_stat = "  "                                  
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_expected_range, self.c_no_skew, self.c_wide_ib, self.c_divergence, self.c_not_otf, self.c_vwap_slope, self.c_touch_vwap, self.c_directional, self.c_osd, self.c_non_dir_open, self.c_ib_ext_stat] if condition == "x")   
+                            self.c_ib_ext_stat = "  "
+                            logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_11: self.day_high({self.day_high}) < self.ib_high({self.ib_high}) + 0.5*(self.ib_high({self.ib_high})-self.ib_low({self.ib_low})) -> [{self.c_ib_ext_stat}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [
+                        self.c_expected_range, self.c_no_skew, self.c_wide_ib, self.c_divergence,
+                        self.c_not_otf, self.c_vwap_slope, self.c_touch_vwap, self.c_directional,
+                        self.c_osd, self.c_non_dir_open, self.c_ib_ext_stat
+                    ] if condition == "x")
+                    logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/11")
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -506,17 +554,18 @@ class XTFD(Base):
                     logger.debug(f" XTFD | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.debug(f" XTFD | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
         direction_settings = {
             "long": {
-                "dir_indicator": "^",
+                "emoji_indicator": "🔼",
                 "destination": "IBL",
             },
             "short": {
-                "dir_indicator": "v",
+                "emoji_indicator": "🔽",
                 "destination": "IBH",
             }
         }
@@ -532,8 +581,7 @@ class XTFD(Base):
             ot = ""   
             colon = ""      
 
-        # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **XTFD {settings['dir_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **XTFD** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,
@@ -546,32 +594,28 @@ class XTFD(Base):
         )
         embed.set_timestamp()
 
-        # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
-        # Criteria Details
         criteria = (
-            f"• [{self.c_divergence}] Price to Value Divergence \n"
-            f"• [{self.c_non_dir_open}] Non-Directional Open{colon} {ot} \n"
-            f"• [{self.c_not_otf}] Rotational Day (Not One-Time Framing) \n"
-            f"• [{self.c_expected_range}] At Least 75% of Expected Range Used \n"
-            f"• [{self.c_wide_ib}] IB is Average to Wide: ({(self.ib_high - self.ib_low / self.ib_atr)*100}%) \n"
-            f"• [{self.c_no_skew}] No Skew to Profile toward {settings['destination']} Extreme \n"
-            f"• [{self.c_directional}] Prior Session was Directional \n"
-            f"• [{self.c_vwap_slope}] No Slope to VWAP"
-            f"• [{self.c_ib_ext_stat}] 1.5x {settings['destination']} Stat Complete \n"
-            f"• [{self.c_touch_vwap}] Touched VWAP After {settings['destination']} Extension.\n"
-            f"• [{self.c_osd}] Within 1 Standard Deviation of VWAP"
-            f"• [{self.c_directional}] Prior Session was Directional"
+            f"- **[{self.c_divergence}]** Price to Value Divergence \n"
+            f"- **[{self.c_non_dir_open}]** Non-Directional Open{colon} {ot} \n"
+            f"- **[{self.c_not_otf}]** Rotational Day (Not One-Time Framing) \n"
+            f"- **[{self.c_expected_range}]** At Least 75% of Expected Range Used \n"
+            f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({(self.ib_high - self.ib_low / self.ib_atr)*100}%) \n"
+            f"- **[{self.c_no_skew}]** No Skew to Profile toward {settings['destination']} Extreme \n"
+            f"- **[{self.c_directional}]** Prior Session was Directional \n"
+            f"- **[{self.c_vwap_slope}]** No Slope to VWAP"
+            f"- **[{self.c_ib_ext_stat}]** 1.5x {settings['destination']} Stat Complete \n"
+            f"- **[{self.c_touch_vwap}]** Touched VWAP After {settings['destination']} Extension.\n"
+            f"- **[{self.c_osd}]** Within 1 Standard Deviation of VWAP"
+            f"- **[{self.c_directional}]** Prior Session was Directional"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
-        # Playbook Score
         embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 11_", inline=False)
         
-        # Alert Time and Price Context
         alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
-        embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
     

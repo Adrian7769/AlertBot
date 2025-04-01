@@ -210,42 +210,59 @@ class TREV(Base):
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
-    
+
+        # Determine Direction Based on Open vs. Prior High/Low with Logging
         if self.day_open > self.prior_high:
             self.direction = "short"
+            logger.debug(f" TREV | check | Product: {self.product_name} | DIR_LOGIC: self.day_open({self.day_open}) > self.prior_high({self.prior_high}) -> short")
         elif self.day_open < self.prior_low:
             self.direction = "long"
+            logger.debug(f" TREV | check | Product: {self.product_name} | DIR_LOGIC: self.day_open({self.day_open}) < self.prior_low({self.prior_low}) -> long")
         else:
             logger.debug(f" TREV | check | Product: {self.product_name} | Note: Open In Range; Not In Play, Returning.")
-            return # Open In Range, So Not In Play
-    
-        # Driving Input
+            return  # Open In Range, So Not In Play
+
+        # Driving Input Check with Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" TREV | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Critical Criteria
+                    # Critical Criteria Logging
                     self.c_several_dir_days = "x"
+                    logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: Set c_several_dir_days -> [{self.c_several_dir_days}]")
+                    
                     self.c_ab_vwap = "x"
-                    self.c_posture = "x" 
-                    # Logic For c_orderflow
+                    logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Set c_ab_vwap -> [{self.c_ab_vwap}]")
+                    
+                    self.c_posture = "x"
+                    logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Set c_posture -> [{self.c_posture}]")
+                    
+                    # Logic For c_orderflow with Logging
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
                         self.c_orderflow = "x"
+                        logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.delta({self.delta}) < 0 for short -> [{self.c_orderflow}]")
                     elif self.direction == "long" and self.delta > 0:
                         self.c_orderflow = "x"
-                    # Logic for c_within_atr
+                        logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.delta({self.delta}) > 0 for long -> [{self.c_orderflow}]")
+                    else:
+                        logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: Orderflow criteria not met -> [{self.c_orderflow}]")
+                    
+                    # Logic for c_within_ibatr with Logging
                     if abs(self.cpl - self.prior_vpoc) <= self.ib_atr:
-                        self.c_within_ibatr= "x"
+                        self.c_within_ibatr = "x"
+                        logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: |abs(self.cpl({self.cpl}) - self.prior_vpoc({self.prior_vpoc})| <= self.ib_atr({self.ib_atr}) -> [{self.c_within_ibatr}]")
                     else:
                         self.c_within_ibatr = "  "
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_several_dir_days, self.c_ab_vwap, self.c_posture, self.c_orderflow, self.c_within_ibatr] if condition == "x")   
+                        logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: |abs(self.cpl({self.cpl}) - self.prior_vpoc({self.prior_vpoc})| > self.ib_atr({self.ib_atr}) -> [{self.c_within_ibatr}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [self.c_several_dir_days, self.c_ab_vwap, self.c_posture, self.c_orderflow, self.c_within_ibatr] if condition == "x")
+                    logger.debug(f" TREV | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/5")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -255,18 +272,19 @@ class TREV(Base):
                     logger.debug(f" TREV | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.info(f" TREV | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
         direction_settings = {
             "long": {
-                "dir_indicator": "^",
-                "vwap": "Above"
+                "emoji_indicator": "🔼",
+                "vwap": "Above",
             },
             "short": {
-                "dir_indicator": "v",
-                "vwap": "Below"
+                "vwap": "Below",
+                "emoji_indicator": "🔽",
             }
         }
  
@@ -275,7 +293,7 @@ class TREV(Base):
             raise ValueError(f" TREV | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")     
 
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **3REV {settings['dir_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **3REV** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,

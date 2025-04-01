@@ -15,13 +15,10 @@ class Gap_Check_Crude(Base):
         
     # ---------------------- Specific Calculations ------------------------- #
     def exp_range(self, prior_close, impvol):
-        
         exp_range = round(((prior_close * (impvol / 100)) * math.sqrt(1 / 252)), 2)
-        
         return exp_range
 
     def gap_info(self, day_open, prior_high, prior_low, exp_range):
-        
         gap = ""
         gap_tier = ""
         
@@ -32,7 +29,7 @@ class Gap_Check_Crude(Base):
             if exp_range == 0:
                 gap_tier = "Undefined"  
             else:
-                gap_ratio = round((gap_size / exp_range) , 2)
+                gap_ratio = round((gap_size / exp_range), 2)
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier 1"
                 elif gap_ratio <= 0.75:
@@ -47,7 +44,7 @@ class Gap_Check_Crude(Base):
             if exp_range == 0:
                 gap_tier = "Undefined" 
             else:
-                gap_ratio = round((gap_size / exp_range) , 2)
+                gap_ratio = round((gap_size / exp_range), 2)
                 if gap_ratio <= 0.5:
                     gap_tier = "Tier 1"
                 elif gap_ratio <= 0.75:
@@ -58,80 +55,64 @@ class Gap_Check_Crude(Base):
         else:
             gap = "No Gap"
             gap_tier = "Tier 0"
-            gap_size=0
+            gap_size = 0
         
         return gap, gap_tier, gap_size
+
     # ---------------------- Driving Input Logic ------------------------- #
     def send_alert(self):
         threads = []
-        for self.product_name in ['CL']:
-            thread = threading.Thread(target=self.process_product, args=(self.product_name))
+        for product_name in ['CL']:
+            thread = threading.Thread(target=self.process_product, args=(product_name,))
             thread.start()
             threads.append(thread)
             time.sleep(1)
 
-        # Optionally wait for all threads to complete
         for thread in threads:
             thread.join()
+
     # ---------------------- Alert Preparation ------------------------- #
     def process_product(self, product_name):
         try:
-            self.product_name = product_name
-            variables = self.fetch_latest_variables(self.product_name)
+            local_product = product_name
+            variables = self.fetch_latest_variables(local_product)
             if not variables:
-                logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} |  Note: No data available ")
+                logger.error(f" GAP_CRUDE | process_product | Product: {local_product} |  Note: No data available ")
                 return
-            
-            # Variables specific to the product
-            prior_close = round(variables.get(f'{self.product_name}_PRIOR_CLOSE'), 2)
-            day_open = round(variables.get(f'{self.product_name}_DAY_OPEN'), 2)
-            prior_high = round(variables.get(f'{self.product_name}_PRIOR_HIGH'), 2)
-            prior_low = round(variables.get(f'{self.product_name}_PRIOR_LOW'), 2)
-
+            prior_close = round(variables.get(f'{local_product}_PRIOR_CLOSE'), 2)
+            day_open = round(variables.get(f'{local_product}_DAY_OPEN'), 2)
+            prior_high = round(variables.get(f'{local_product}_PRIOR_HIGH'), 2)
+            prior_low = round(variables.get(f'{local_product}_PRIOR_LOW'), 2)
             impvol = config.cl_impvol
-
-            color = self.product_color.get(self.product_name)
-            current_time = datetime.now(self.est).strftime('%H:%M:%S')
-            
-            # Calculations
-            exp_range = self.exp_range(
-                prior_close, impvol
-                )
-            gap, gap_tier, gap_size = self.gap_info(
-                day_open, prior_high, prior_low, exp_range
-                )
+            color_name = self.product_color.get(local_product, "black") 
+            color_value = self.get_color(local_product)
+            exp_range = self.exp_range(prior_close, impvol)
+            gap, gap_tier, gap_size = self.gap_info(day_open, prior_high, prior_low, exp_range)
             
             if gap in ["Gap Up", "Gap Down"]:
-                # Direction Symbols
                 direction_emojis = {
-                    'Gap Up': ':arrow_up:',
-                    'Gap Down': ':arrow_down:',
+                    'Gap Up': '🔼',
+                    'Gap Down': '🔽',
                 }
                 
-                # Build the Discord Embed
                 try:
-                    # Title Construction with Emojis
-                    embed_title = f":large_{color}_square: **{self.product_name} - Context Alert - Gap** :large_{color}_square:"
+                    embed_title = f":{color_name}_large_square: **{local_product} - Context Alert - Gap** {direction_emojis[gap]}"
                     embed = DiscordEmbed(
                         title=embed_title,
                         description=(
-                            f"**Gap Type**: _{gap}_\n"
-                            f"**Tier**: _{gap_tier}_\n"
-                            f"**Gap Size**: _{gap_size}p_"
+                            f"**Gap Type**: {gap} \n"
+                            f"**Tier**: {gap_tier} \n"
+                            f"**Gap Size**: {gap_size}p "
                         ),
-                        color=self.get_color()
+                        color=color_value
                     )
-                    embed.set_timestamp()  # Automatically sets the timestamp to current time
+                    embed.set_timestamp()  
 
-                    # Add Alert Time
-                    embed.add_embed_field(name=":alarm_clock: Alert Time", value=f"_{current_time}_ EST", inline=False)
-
-                    # Send the embed with the webhook
-                    self.send_alert_embed(embed, username=None, avatar_url=None)
+                    self.send_alert_embed(embed, product_name=local_product, username=None, avatar_url=None)
 
                 except Exception as e:
-                    logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} | Error sending Discord message: {e}")
+                    logger.error(f" GAP_CRUDE | process_product | Product: {local_product} | Error sending Discord message: {e}")
             else:
-                logger.info(f" GAP_CRUDE | process_product | Product: {self.product_name} | Note: No Gap detected, message not sent.")
+                logger.info(f" GAP_CRUDE | process_product | Product: {local_product} | Note: No Gap detected, message not sent.")
         except Exception as e:
-            logger.error(f" GAP_CRUDE | process_product | Product: {self.product_name} | Error processing: {e}")
+            logger.error(f" GAP_CRUDE | process_product | Product: {local_product} | Error processing: {e}")

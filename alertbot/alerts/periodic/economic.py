@@ -50,7 +50,6 @@ class Economic(Base):
         columns_to_keep = ['time', 'event', 'importance']
         logger.debug(f" ECON | send_alert | Columns to keep: {columns_to_keep}")
 
-        # Check if required columns are present
         missing_columns = [col for col in columns_to_keep if col not in calendar_df.columns]
         if missing_columns:
             logger.error(f" ECON | send_alert | Missing columns in DataFrame: {missing_columns}")
@@ -59,7 +58,6 @@ class Economic(Base):
         else:
             logger.debug(" ECON | send_alert | All required columns are present.")
 
-        # Proceed to select the columns
         try:
             calendar_df = calendar_df[columns_to_keep]
             logger.debug(" ECON | send_alert | Selected required columns from DataFrame.")
@@ -82,7 +80,6 @@ class Economic(Base):
         events_text = "\n".join(formatted_events)
         logger.debug(f" ECON | send_alert | Events text prepared for Discord.")
 
-        # Build the Discord Embed
         try:
             embed_title = f":black_large_square: **Economic Events for {today_str}** :black_large_square:"
             embed = DiscordEmbed(
@@ -93,7 +90,6 @@ class Economic(Base):
             embed.set_timestamp()  
             embed.add_embed_field(name=":information_source: Note", value="`Control Risk and Trade Well!`", inline=False)
 
-            # Send the embed with the webhook
             if discord_webhook_url:
                 webhook = DiscordWebhook(url=discord_webhook_url, username=None)
                 webhook.add_embed(embed)

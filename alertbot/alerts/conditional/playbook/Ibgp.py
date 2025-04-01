@@ -112,27 +112,29 @@ class IBGP(Base):
             day_type = "Other"
         logger.debug(f" IBGP | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
         return day_type
-    def open_type(self):
-        a_period_mid = round(((self.a_high + self.a_low) / 2), 2)
-        overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
-        total_range = self.day_high - self.day_low
-        if self.day_open == self.a_high and (self.b_high < a_period_mid):
+    def open_type(self, a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low):
+        a_period_mid = round(((a_high + a_low) / 2), 2)
+        current_sub_low = min(a_low, b_low)
+        current_sub_high = max(a_high, b_high)
+        overlap = max(0, min(current_sub_high, prior_high) - max(current_sub_low, prior_low))
+        total_range = day_high - day_low
+        if day_open == a_high and (b_high < a_period_mid):
             open_type = "OD v"
-        elif self.day_open == self.a_low and (self.b_low > a_period_mid):
+        elif day_open == a_low and (b_low > a_period_mid):
             open_type = "OD ^"
-        elif (self.day_open > a_period_mid) and (self.b_high < a_period_mid):
+        elif (day_open > a_period_mid) and (b_high < a_period_mid):
             open_type = "OTD v"
-        elif (self.day_open < a_period_mid) and (self.b_low > a_period_mid):
+        elif (day_open < a_period_mid) and (b_low > a_period_mid):
             open_type = "OTD ^"
-        elif (self.day_open > a_period_mid) and (self.b_low > a_period_mid) and (self.b_high > self.orh):
+        elif (day_open > a_period_mid) and (b_low > a_period_mid) and (b_high > orh):
             open_type = "ORR ^"
-        elif (self.day_open < a_period_mid) and (self.b_high < a_period_mid) and (self.b_low < self.orl):
+        elif (day_open < a_period_mid) and (b_high < a_period_mid) and (b_low < orl):
             open_type = "ORR v"
         elif overlap >= 0.5 * total_range:
             open_type = "OAIR"
-        elif (overlap < 0.5 * total_range) and (self.day_open >= self.prior_high):
+        elif (overlap < 0.5 * total_range) and (day_open >= prior_high):
             open_type = "OAOR ^"
-        elif (overlap < 0.5 * total_range) and (self.day_open <= self.prior_low):
+        elif (overlap < 0.5 * total_range) and (day_open <= prior_low):
             open_type = "OAOR v"
         else:
             open_type = "Other"
@@ -308,76 +310,119 @@ class IBGP(Base):
             return False
 # ---------------------------------- Calculate Criteria ------------------------------------ #      
     def check(self):
+        # Determine Direction with Detailed Logging
         if self.day_low < self.ib_low:
             self.direction = "short"
+            logger.debug(f" IBGP | check | Product: {self.product_name} | DIR_LOGIC: self.day_low({self.day_low}) < self.ib_low({self.ib_low}) -> short")
         elif self.day_high > self.ib_high:
             self.direction = "long"
+            logger.debug(f" IBGP | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> long")
         elif self.day_low < self.ib_low and self.day_high > self.ib_high:
             logger.debug(f" IBGP | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
             return
         else:
             logger.debug(f" IBGP | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning.")
             return
-        # Driving Input
+
+        # Driving Input Check with Detailed Logging
         if self.time_window() and self.input():
-            
             with last_alerts_lock:
-                last_alert = last_alerts.get(self.product_name)   
+                last_alert = last_alerts.get(self.product_name)
                 logger.debug(f" IBGP | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
-                if self.direction != last_alert: 
+                if self.direction != last_alert:
                     logger.info(f" IBGP | check | Product: {self.product_name} | Note: Condition Met")
                     
-                    # Critical Criteria
+                    # CRITERIA 1: Favorable Price
                     self.c_favorable_price = "x"
+                    logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: Set c_favorable_price -> [{self.c_favorable_price}]")
+                    
+                    # CRITERIA 2: Rotational Current Session
                     self.c_rotational_current_session = "x"
+                    logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Set c_rotational_current_session -> [{self.c_rotational_current_session}]")
+                    
+                    # CRITERIA 3: Wide IB
                     self.c_wide_ib = "x"
+                    logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Set c_wide_ib -> [{self.c_wide_ib}]")
+                    
+                    # CRITERIA 4: IB Extension Half
                     self.c_ib_ext_half = "x"
-                    # Logic for Non-Directional Open
+                    logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: Set c_ib_ext_half -> [{self.c_ib_ext_half}]")
+                    
+                    # CRITERIA 5: Non-Directional Open
                     if self.open_type() == "OAIR":
                         self.c_non_dir_open = "x"
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: open_type() returned 'OAIR' -> [{self.c_non_dir_open}]")
                     else:
                         self.c_non_dir_open = "  "
-                    # Logic for using 75% of Expected Range
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: open_type() did not return 'OAIR' -> [{self.c_non_dir_open}]")
+                    
+                    # CRITERIA 6: Using 75% of Expected Range
                     self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
                     self.remaining_range = self.exp_rng - self.used_range
                     if self.remaining_range >= 0.75 * self.exp_rng:
                         self.c_exp_rng = "x"
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) >= 0.75*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "  "
-                    # Logic for c_euro IB
-                    if self.direction == "short": 
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) < 0.75*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                    
+                    # CRITERIA 7: Euro IB
+                    if self.direction == "short":
                         if self.cpl < self.euro_ibl:
-                            self.c_euro_ib = "x" 
+                            self.c_euro_ib = "x"
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) < euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                         else:
                             self.c_euro_ib = "  "
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) >= euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                     elif self.direction == "long":
                         if self.cpl > self.euro_ibh:
-                            self.c_euro_ib = "x" 
+                            self.c_euro_ib = "x"
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) > euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
                         else:
-                            self.c_euro_ib = "  "                     
-                    # Logic DVPOC is in middle of IB Range
-                    if self.ib_low + round(0.25 * (self.ib_high - self.ib_low), 2) <= self.day_vpoc <= self.ib_high - round( 0.25 * (self.ib_high - self.ib_low), 2):
-                        self.c_vpoc_in_middle = "x" 
+                            self.c_euro_ib = "  "
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: self.cpl({self.cpl}) <= euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
+                    
+                    # CRITERIA 8: DVPOC in Middle of IB Range
+                    lower_bound = self.ib_low + round(0.25 * (self.ib_high - self.ib_low), 2)
+                    upper_bound = self.ib_high - round(0.25 * (self.ib_high - self.ib_low), 2)
+                    if lower_bound <= self.day_vpoc <= upper_bound:
+                        self.c_vpoc_in_middle = "x"
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) in middle of IB range ({lower_bound}-{upper_bound}) -> [{self.c_vpoc_in_middle}]")
                     else:
                         self.c_vpoc_in_middle = "  "
-                    # Logic for is prior session directional
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) not in middle of IB range ({lower_bound}-{upper_bound}) -> [{self.c_vpoc_in_middle}]")
+                    
+                    # CRITERIA 9: Prior Session Directional
                     if self.prior_day() == "Directional":
                         self.c_directional = "x"
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() returned Directional -> [{self.c_directional}]")
                     else:
-                        self.c_directional = "  "  
-                    # Logic for Noticeable Slope to VWAP
-                    if self.direction == "short": 
+                        self.c_directional = "  "
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() did not return Directional -> [{self.c_directional}]")
+                    
+                    # CRITERIA 10: Noticeable Slope to VWAP
+                    if self.direction == "short":
                         if self.vwap_slope < -0.03:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) < -0.03 -> [{self.c_vwap_slope}]")
                         else:
                             self.c_vwap_slope = "  "
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) >= -0.03 -> [{self.c_vwap_slope}]")
                     elif self.direction == "long":
                         if self.vwap_slope > 0.03:
-                            self.c_vwap_slope = "x" 
+                            self.c_vwap_slope = "x"
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) > 0.03 -> [{self.c_vwap_slope}]")
                         else:
-                            self.c_vwap_slope = "  "                                        
-                    # Logic for Score 
-                    self.score = sum(1 for condition in [self.c_favorable_price, self.c_rotational_current_session, self.c_euro_ib, self.c_vpoc_in_middle, self.c_ib_ext_half, self.c_wide_ib, self.c_exp_rng, self.c_non_dir_open, self.c_directional] if condition == "x")   
+                            self.c_vwap_slope = "  "
+                            logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) <= 0.03 -> [{self.c_vwap_slope}]")
+                    
+                    # Score Calculation Logging
+                    self.score = sum(1 for condition in [
+                        self.c_favorable_price, self.c_rotational_current_session, self.c_euro_ib, self.c_vpoc_in_middle,
+                        self.c_ib_ext_half, self.c_wide_ib, self.c_exp_rng, self.c_non_dir_open, self.c_directional
+                    ] if condition == "x")
+                    logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/9")
+                    
                     try:
                         last_alerts[self.product_name] = self.direction
                         self.execute()
@@ -387,22 +432,23 @@ class IBGP(Base):
                     logger.debug(f" IBGP | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
             logger.debug(f" IBGP | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
 
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
         direction_settings = {
             "long": {
-                "dir_indicator": "^",
                 "destination": "IBH",
                 "mid": "Above",
                 "mid-o": "Below",
+                "emoji_indicator": "🔼",
             },
             "short": {
-                "dir_indicator": "v",
                 "destination": "IBL",
                 "mid": "Below",
                 "mid-o": "Above",                
+                "emoji_indicator": "🔽",
             }
         }
  
@@ -428,7 +474,7 @@ class IBGP(Base):
                 inline_text = f"Noticeable Slope to dVWAP \n"
 
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **IBGP {settings['dir_indicator']}**"
+        title = f"**{self.product_name} - Playbook Alert** - **PVAT** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,
