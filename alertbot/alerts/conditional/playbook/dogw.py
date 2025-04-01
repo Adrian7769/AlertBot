@@ -348,7 +348,8 @@ class DOGW(Base):
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition False -> [{self.c_within_atr}]")
                     
                     # CRITERIA 2: 50% of ETH Expected Range Left
-                    if (self.overnight_high - self.overnight_low) <= (self.exp_rng * 0.5):
+                    self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
+                    if self.range_used <= 0.5:
                         self.c_exp_rng = "x"
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition met -> [{self.c_exp_rng}]")
                     else:
@@ -426,7 +427,6 @@ class DOGW(Base):
     # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
-        pro_color = self.product_color.get(self.product_name)
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
         
         direction_settings = {
@@ -468,8 +468,8 @@ class DOGW(Base):
         # Confidence
         criteria = (
             f"- **[{self.c_within_atr}]** 40% Of Average IB Left To Target\n"
-            f"- **[{self.c_exp_rng}]** 50% Of ETH Expected Range Left\n"
-            f"- **[{self.c_vwap_slope}]** Strong Slope To VWAP\n"
+            f"- **[{self.c_exp_rng}]** Less Than 50% Expected Range Used: {round((self.range_used*100),2)}\n"
+            f"- **[{self.c_vwap_slope}]** Strong Slope To VWAP ({self.vwap_slope*100}°) \n"
             f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
             f"- **[{self.c_vwap_slope}]** Elevated RVOL ({self.rvol}%)\n"
             f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"

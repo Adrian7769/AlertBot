@@ -354,8 +354,7 @@ class XTFD(Base):
         def log_condition(condition, description):
             logger.debug(f"XTFD | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
-        self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
-        self.remaining_range = self.exp_rng - self.used_range
+        self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
         if self.direction == "short":
             crit4 = log_condition(
                 self.day_vpoc < self.ib_high - 0.35 * (self.ib_high - self.ib_low),
@@ -371,8 +370,8 @@ class XTFD(Base):
             f"CRITICAL1: (ib_high({self.ib_high}) - ib_low({self.ib_low}))/ib_atr({self.ib_atr}) >= 1.00"
         )
         crit2 = log_condition(
-            self.remaining_range >= (0.75 * self.exp_rng),
-            f"CRITICAL2: remaining_range({self.remaining_range}) >= 0.75 * exp_rng({self.exp_rng})"
+            self.range_used >= 0.75,
+            f"CRITICAL2: range_used({self.range_used}) >= 0.75"
         )
         crit3 = log_condition(
             self.ib_low < self.day_vpoc < self.ib_high,
@@ -452,6 +451,8 @@ class XTFD(Base):
                     self.c_no_skew = "x"
                     logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Set c_no_skew -> [{self.c_no_skew}]")
                     
+                    self.ib_range = round((self.ib_high - self.ib_low), 2)
+                    self.ib_vatr = round((self.ib_range / self.ib_atr), 2)                       
                     self.c_wide_ib = "x"
                     logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Set c_wide_ib -> [{self.c_wide_ib}]")
                     
@@ -600,11 +601,11 @@ class XTFD(Base):
             f"- **[{self.c_divergence}]** Price to Value Divergence \n"
             f"- **[{self.c_non_dir_open}]** Non-Directional Open{colon} {ot} \n"
             f"- **[{self.c_not_otf}]** Rotational Day (Not One-Time Framing) \n"
-            f"- **[{self.c_expected_range}]** At Least 75% of Expected Range Used \n"
-            f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({(self.ib_high - self.ib_low / self.ib_atr)*100}%) \n"
+            f"- **[{self.c_expected_range}]** At Least 75% of Expected Range Used: {round((self.range_used*100),2)}\n"
+            f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({round((self.ib_vatr*100), 2)}%) \n"
             f"- **[{self.c_no_skew}]** No Skew to Profile toward {settings['destination']} Extreme \n"
             f"- **[{self.c_directional}]** Prior Session was Directional \n"
-            f"- **[{self.c_vwap_slope}]** No Slope to VWAP"
+            f"- **[{self.c_vwap_slope}]** No Slope to VWAP: ({self.vwap_slope*100}°)"
             f"- **[{self.c_ib_ext_stat}]** 1.5x {settings['destination']} Stat Complete \n"
             f"- **[{self.c_touch_vwap}]** Touched VWAP After {settings['destination']} Extension.\n"
             f"- **[{self.c_osd}]** Within 1 Standard Deviation of VWAP"
