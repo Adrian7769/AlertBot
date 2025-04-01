@@ -203,7 +203,7 @@ class BSND(Base):
                 else:
                     logger.debug(f" BSND | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.info(f" BSND | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+            logger.debug(f" BSND | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):

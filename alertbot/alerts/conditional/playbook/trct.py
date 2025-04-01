@@ -973,7 +973,7 @@ class TRCT(Base):
                 else:
                     logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Alert: {self.direction} Is Same")
         else:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: Condition(s) Not Met")
+            logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
