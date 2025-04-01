@@ -455,33 +455,33 @@ class DOGW(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.target} (Avg Range IB)_\n"
-                f"**Risk**: Wrong if price accepts {settings['risk']} HWB of A period or {settings['risk']} ETH VWAP.\n"
-                f"**Driving Input**: Auction is presenting a directional open type.\n"
+                f"**Destination**: {self.target} (Avg Range IB)\n"
+                f"**Risk**: Wrong if price accepts {settings['risk']} HWB of A period or {settings['risk']} ETH VWAP\n"
+                f"**Driving Input**: Auction is presenting a directional open type\n"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()
         
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
         
         # Confidence
         criteria = (
-            f"• **[{self.c_within_atr}]** 40% Of Average IB Left To Target\n"
-            f"• **[{self.c_exp_rng}]** 50% Of ETH Expected Range Left\n"
-            f"• **[{self.c_vwap_slope}]** Strong Slope To VWAP\n"
-            f"• **[{self.c_orderflow}]** Supportive Cumulative Delta (*_{self.delta}_*)\n"
-            f"• **[{self.c_vwap_slope}]** Elevated RVOL (*_{self.rvol}%_*)\n"
-            f"• **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
-            f"• **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
+            f"- **[{self.c_within_atr}]** 40% Of Average IB Left To Target\n"
+            f"- **[{self.c_exp_rng}]** 50% Of ETH Expected Range Left\n"
+            f"- **[{self.c_vwap_slope}]** Strong Slope To VWAP\n"
+            f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
+            f"- **[{self.c_vwap_slope}]** Elevated RVOL ({self.rvol}%)\n"
+            f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
+            f"- **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
         # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 7_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 7", inline=False)
         
-        # Alert Time and Price Context
-        embed.add_embed_field(name="**Alert Time / Price**", value=f"_{alert_time_formatted}_ EST | {self.cpl}_", inline=False)
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
     

@@ -299,32 +299,30 @@ class TREV(Base):
             title=title,
             description=(
                 f"**Destination**: {self.prior_vpoc} (PVPOC) \n"
-                f"**Risk**: Wrong if Auction Finds Acceptance Away from Prior Session Vpoc\n"
-                f"**Driving Input**: Several Day's of Sustained Direction and Participation is Waning. \n"
+                f"**Risk**: Wrong if Auction Finds Acceptance Away from Prior Session Vpoc \n"
+                f"**Driving Input**: Several Day's of Sustained Direction and Participation is Waning \n"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()
 
         # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
         # Criteria Details
         criteria = (
-            f"• [{self.c_several_dir_days}] Several Days of Sustained Direction \n"
-            f"• [{self.c_posture}] Auction in Postural Extreme: ({self.posture()}) \n"
-            f"• [{self.c_orderflow}] Supportive Cumulative Delta ({self.delta}) \n"
-            f"• [{self.c_ab_vwap}] {settings['vwap']} ETH VWAP \n"
-            f"• [{self.c_within_ibatr}] Prior Vpoc Within ATR of IB \n"
+            f"- **[{self.c_several_dir_days}]** Several Days of Sustained Direction \n"
+            f"- **[{self.c_posture}]** Auction in Postural Extreme: ({self.posture()}) \n"
+            f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta}) \n"
+            f"- **[{self.c_ab_vwap}]** {settings['vwap']} ETH VWAP \n"
+            f"- **[{self.c_within_ibatr}]** Prior Vpoc Within ATR of IB \n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
-        # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 5_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 5", inline=False)
         
-        # Alert Time and Price Context
-        alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
-        embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
         return embed
     
     def execute(self):

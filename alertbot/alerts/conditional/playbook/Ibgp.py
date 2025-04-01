@@ -95,19 +95,19 @@ class IBGP(Base):
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
             self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
             self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
             self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
             self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         else:
             day_type = "Other"
         logger.debug(f" IBGP | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
@@ -273,7 +273,7 @@ class IBGP(Base):
             )
 
         crit3 = log_condition(
-            self.ib_high - self.ib_low / self.ib_atr >= 1.00,
+            (self.ib_high - self.ib_low) / self.ib_atr >= 1.00,
             f"CRITICAL3: (ib_high({self.ib_high}) - ib_low({self.ib_low}) / ib_atr({self.ib_atr})) >= 1.00"
         )
         crit4 = log_condition(not self.one_time_framing(), "CRITICAL4: not one_time_framing()")
@@ -341,6 +341,8 @@ class IBGP(Base):
                     logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: Set c_rotational_current_session -> [{self.c_rotational_current_session}]")
                     
                     # CRITERIA 3: Wide IB
+                    self.ib_range = round((self.ib_high - self.ib_low), 2)
+                    self.ib_vatr = round((self.ib_range / self.ib_atr), 2)                    
                     self.c_wide_ib = "x"
                     logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Set c_wide_ib -> [{self.c_wide_ib}]")
                     
@@ -357,14 +359,13 @@ class IBGP(Base):
                         logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: open_type() did not return 'OAIR' -> [{self.c_non_dir_open}]")
                     
                     # CRITERIA 6: Using 75% of Expected Range
-                    self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
-                    self.remaining_range = self.exp_rng - self.used_range
-                    if self.remaining_range >= 0.75 * self.exp_rng:
+                    self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
+                    if self.range_used >= 0.75:
                         self.c_exp_rng = "x"
-                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) >= 0.75*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) >= 0.75 -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "  "
-                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) < 0.75*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) < 0.75 -> [{self.c_exp_rng}]")
                     
                     # CRITERIA 7: Euro IB
                     if self.direction == "short":
@@ -393,12 +394,12 @@ class IBGP(Base):
                         logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: day_vpoc({self.day_vpoc}) not in middle of IB range ({lower_bound}-{upper_bound}) -> [{self.c_vpoc_in_middle}]")
                     
                     # CRITERIA 9: Prior Session Directional
-                    if self.prior_day() == "Directional":
+                    if self.prior_day() in ["Directional", "Semi-Directional"]:
                         self.c_directional = "x"
-                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() returned Directional -> [{self.c_directional}]")
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() returned Directional or Semi-Directional -> [{self.c_directional}]")
                     else:
                         self.c_directional = "  "
-                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() did not return Directional -> [{self.c_directional}]")
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: prior_day() did not return Directional or Semi-Directional -> [{self.c_directional}]")
                     
                     # CRITERIA 10: Noticeable Slope to VWAP
                     if self.direction == "short":
@@ -481,7 +482,7 @@ class IBGP(Base):
             description=(
                 f"**Destination**: Depending on Entry, Developing VWAP/VPOC or {settings['destination']}\n"
                 f"**Risk**: Wrong if Auction goes neutral\n"
-                f"**Driving Input**: This trade seeks entry with the participants who extended the Initial Balance, either at the developing value or favorable to it.\n"
+                f"**Driving Input**: This trade seeks entry with the participants who extended the Initial Balance, either at the developing value or favorable to it \n"
             ),
             color=self.get_color()
         )
@@ -492,16 +493,16 @@ class IBGP(Base):
 
         # Criteria Details
         criteria = (
-            f"• [{self.c_favorable_price}] Price is favorable to Value: At or {settings['mid-o']}\n"
-            f"• [{self.c_non_dir_open}] Non-Directional Open{colon} {ot}\n"
-            f"• [{self.c_rotational_current_session}] Rotational Day (Not One-Time Framing) \n"
-            f"• [{self.c_exp_rng}] Achieved 75% of Expected Range \n"
-            f"• [{self.c_wide_ib}] IB is Average to Wide: ({(self.ib_high - self.ib_low / self.ib_atr)*100}%) \n"
-            f"• [{self.c_vpoc_in_middle}] dVPOC is in middle of IB Range \n"
-            f"• [{self.c_directional}] Prior Session was Directional \n"
-            f"• [{self.c_vwap_slope}] {inline_text}"
-            f"• [{self.c_ib_ext_half}] Have Not Hit 1.5x {settings['destination']}\n"
-            f"• [{self.c_euro_ib}] {settings['mid']} Euro {settings['destination']}\n"
+            f"- **[{self.c_favorable_price}]** Price is favorable to Value: At or {settings['mid-o']}\n"
+            f"- **[{self.c_non_dir_open}]** Non-Directional Open{colon} {ot}\n"
+            f"- **[{self.c_rotational_current_session}]** Rotational Day (Not One-Time Framing) \n"
+            f"- **[{self.c_exp_rng}]** Achieved At Least 75% of Expected Range: {round((self.range_used*100),2)} \n"
+            f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({round((self.ib_vatr*100),2)}%) \n"
+            f"- **[{self.c_vpoc_in_middle}]** dVPOC is in middle of IB Range \n"
+            f"- **[{self.c_directional}]** Prior Session was Directional \n"
+            f"- **[{self.c_vwap_slope}]** {inline_text}"
+            f"- **[{self.c_ib_ext_half}]** Have Not Hit 1.5x {settings['destination']}\n"
+            f"- **[{self.c_euro_ib}]** {settings['mid']} Euro {settings['destination']}\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 

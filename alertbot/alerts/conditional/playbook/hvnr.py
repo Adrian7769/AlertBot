@@ -242,35 +242,34 @@ class HVNR(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{self.p_vpoc} (Prior Session Vpoc)_\n"
-                f"**Risk**: _Wrong if auction fails to complete PVPOC test before IB, or accepts away from value_\n"
-                f"**Driving Input**: _Auction opening in range or slightly outside range, divergent from prior session Vpoc_\n"
+                f"**Destination**: {self.p_vpoc} (Prior Session Vpoc) \n"
+                f"**Risk**: Wrong if auction fails to complete PVPOC test before IB, or accepts away from value \n"
+                f"**Driving Input**: Auction opening in range or slightly outside range, divergent from prior session Vpoc \n"
             ),
             color=self.get_color()
         )
-        embed.set_timestamp()  # Automatically sets the timestamp to current time
+        embed.set_timestamp()  
 
         # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
         # Criteria Details
         criteria = (
-            f"• **[{self.c_within_atr}]** Target Within ATR Of IB\n"
-            f"• **[{self.c_orderflow}]** Orderflow In Direction Of Target (_{self.delta}_) \n"
-            f"• **[{self.c_euro_ib}]** {settings['c_euro_ib_text']}\n"
-            f"• **[{self.c_or}]** {settings['c_or_text']}\n"
-            f"\n• **[{self.c_between}]** Between DVWAP and PVPOC\n"
+            f"- **[{self.c_within_atr}]** Target Within ATR Of IB\n"
+            f"- **[{self.c_orderflow}]** Orderflow In Direction Of Target ({self.delta}) \n"
+            f"- **[{self.c_euro_ib}]** {settings['c_euro_ib_text']}\n"
+            f"- **[{self.c_or}]** {settings['c_or_text']}\n"
+            f"\n- **[{self.c_between}]** Between DVWAP and PVPOC\n"
             f"Or\n"
-            f"• **[{self.c_align}]** DVWAP and PVPOC aligned\n"
+            f"- **[{self.c_align}]** DVWAP and PVPOC aligned\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
         # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 5_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 5", inline=False)
         
-        # Alert Time and Price Context
-        alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
-        embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
     

@@ -98,19 +98,19 @@ class IBGW(Base):
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
             self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
             self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
             self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
             self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         else:
             day_type = "Other"
         logger.debug(f" IBGW | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
@@ -388,22 +388,23 @@ class IBGW(Base):
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: crit1 is False -> [{self.c_ib_ext_half}]")
                     
                     # CRITERIA 5: IB Narrow to Average
-                    if self.ib_high - self.ib_low / self.ib_atr <= 0.85:
+                    self.ib_range = round((self.ib_high - self.ib_low), 2)
+                    self.ib_vatr = round((self.ib_range / self.ib_atr), 2)
+                    if self.ib_vatr <= 0.85:
                         self.c_narrow_ib = "x"
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) <= 0.85 -> [{self.c_narrow_ib}]")
                     else:
                         self.c_narrow_ib = "  "
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: (ib_high({self.ib_high}) - ib_low({self.ib_low})/ib_atr({self.ib_atr})) > 0.85 -> [{self.c_narrow_ib}]")
                     
-                    # CRITERIA 6: 50% of Expected Range Left
-                    self.used_range = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
-                    self.remaining_range = self.exp_rng - self.used_range
-                    if self.remaining_range >= 0.5 * self.exp_rng:
+                    # CRITERIA 6: Less than 50% expected range used
+                    self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
+                    if self.range_used > 0.5:
                         self.c_exp_rng = "  "
-                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) >= 0.5*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) >= 0.5 -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "x"
-                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.remaining_range}) < 0.5*exp_rng({self.exp_rng}) -> [{self.c_exp_rng}]")
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) < 0.5 -> [{self.c_exp_rng}]")
                     
                     # CRITERIA 7: c_euro IB
                     if self.direction == "short":
@@ -519,8 +520,10 @@ class IBGW(Base):
             self.destination = self.ib_low - 0.5 * (self.ib_high - self.ib_low)
             if self.open_type() in ["OTD v", "OD v", "ORR v", "OAOR ^"]:
                 ot = self.open_type()
+                colon = ":"
             else:
                 ot = ""            
+                colon = ""
         if self.direction == "long":
             if self.vwap_slope > 0.05:
                 inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
@@ -537,30 +540,30 @@ class IBGW(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: {self.destination} ({settings['destination']} 1.5x)\n"
-                f"**Risk**: Price Quickly Rejects IB Range Extension\n"
-                f"**Driving Input**: This trade seeks entry on the breach of the Initial Balance toward a pre-defined target.\n"
+                f"**Destination**: {self.destination} ({settings['destination']} 1.5x) \n"
+                f"**Risk**: Price Quickly Rejects IB Range Extension \n"
+                f"**Driving Input**: This trade seeks entry on the breach of the Initial Balance toward a pre-defined target \n"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()
 
         # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
         # Criteria Details
         criteria = (
-            f"• [{self.c_directional_open}] Directional Open: {ot}\n"
-            f"• [{self.c_otf}] One-Time Framing \n"
-            f"• [{self.c_exp_rng}] 50% Expected Range Left: ({round(((self.remaining_range/self.exp_rng)*100), 2)}%) \n"
-            f"• [{self.c_narrow_ib}] IB is Narrow to Average: ({(self.ib_high - self.ib_low / self.ib_atr)*100}%) \n"
-            f"• [{self.c_skew}] Skew In Profile Towards IB {settings['destination']}\n"
-            f"• [{self.c_composite_ref}] IB Broke From Composite Value Reference\n"
-            f"• [{self.c_rotational}] Prior Session Was Balanced\n"
-            f"• [{self.c_vwap_slope}] {inline_text}"
-            f"• [{self.c_ib_ext_half}] Have Not Hit 1.5x {settings['destination']}\n"
-            f"• [{self.c_magnet}] Clear Magnet Ahead\n"
-            f"• [{self.c_euro_ib}] {settings['mid']} Euro {settings['destination']}\n"
+            f"- **[{self.c_directional_open}]** Directional Open{colon} {ot} \n"
+            f"- **[{self.c_otf}]** One-Time Framing \n"
+            f"- **[{self.c_exp_rng}]** Less than 50% Expected Range Used: ({round((self.range_used*100),2)}%) \n"
+            f"- **[{self.c_narrow_ib}]** IB is Narrow to Average: ({round((self.ib_vatr*100), 2)}%) \n"
+            f"- **[{self.c_skew}]** Skew In Profile Towards IB {settings['destination']} \n"
+            f"- **[{self.c_composite_ref}]** IB Broke From Composite Value Reference \n"
+            f"- **[{self.c_rotational}]** Prior Session Was Balanced \n"
+            f"- **[{self.c_vwap_slope}]** {inline_text}"
+            f"- **[{self.c_ib_ext_half}]** Have Not Hit 1.5x {settings['destination']} \n"
+            f"- **[{self.c_magnet}]** Clear Magnet Ahead \n"
+            f"- **[{self.c_euro_ib}]** {settings['mid']} Euro {settings['destination']} \n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 

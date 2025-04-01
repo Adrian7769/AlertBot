@@ -131,11 +131,11 @@ class DATR(Base):
         if crit1:
             if self.direction == 'Higher':
                 crit2 = log_condition(self.cpl > prior_mid, f"CRITICAL2: self.cpl({self.cpl}) > prior_mid({self.prior_mid})")
-                crit3 = log_condition(self.prior_vpoc > ((self.prior_high + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) > ((prior_high({self.prior_high}) + prior_mid({self.prior_mid})) / 2)")
+                crit3 = log_condition(self.prior_vpoc > ((self.prior_high + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) > ((prior_high({self.prior_high}) + prior_low({self.prior_low})) / 2)")
                 logic = crit2 and crit3
             elif self.direction == 'Lower':
                 crit2 = log_condition(self.cpl < prior_mid, f"CRITICAL2: self.cpl({self.cpl}) < prior_mid({self.prior_mid})")
-                crit3 = log_condition(self.prior_vpoc < ((self.prior_low + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) < ((prior_low({self.prior_low}) + prior_mid({self.prior_mid})) / 2)")
+                crit3 = log_condition(self.prior_vpoc < ((self.prior_low + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) < ((prior_low({self.prior_low}) + prior_high({self.prior_high})) / 2)")
                 logic = crit2 and crit3
         logger.debug(f"DATR | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3}")
         return logic
@@ -247,7 +247,6 @@ class DATR(Base):
 
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
-        pro_color = self.product_color.get(self.product_name)
         alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
         direction_settings = { 
             "Higher": {
@@ -278,25 +277,27 @@ class DATR(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{settings['risk']} (Prior Session {settings['destination']})_\n"
-                f"**Risk**: _Wrong if price accepts {settings['risk']} HWB of prior session_\n"
-                f"**Driving Input**: _Prior Day was a trend {settings['trend']}_\n"
+                f"**Destination**: {settings['risk']} (Prior Session {settings['destination']})\n"
+                f"**Risk**: Wrong if price accepts {settings['risk']} HWB of prior session\n"
+                f"**Driving Input**: Prior Day was a trend {settings['trend']}\n"
             ),
             color=self.get_color()
         )
         embed.set_timestamp() 
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
         criteria = (
-            f"• **[{self.c_trend}]** Prior Day was Trend Day\n"
-            f"• **[{self.c_open}]** Open Inside of Prior Range\n"
-            f"• **[{self.c_hwb}]** {settings['c_hwb']} HWB of Prior Day Range\n"
-            f"• **[{self.c_prior_vpoc}]** Prior Day VPOC {settings['c_prior_vpoc']} HWB of Prior Day Range\n"
-            f"• **[{self.c_vwap}]** {settings['c_vwap']} ETH VWAP\n"
-            f"• **[{self.c_orderflow}]** Supportive Cumulative Delta (*_{self.delta}_*)\n"
+            f"- **[{self.c_trend}]** Prior Day was Trend Day\n"
+            f"- **[{self.c_open}]** Open Inside of Prior Range\n"
+            f"- **[{self.c_hwb}]** {settings['c_hwb']} HWB of Prior Day Range\n"
+            f"- **[{self.c_prior_vpoc}]** Prior Day VPOC {settings['c_prior_vpoc']} HWB of Prior Day Range\n"
+            f"- **[{self.c_vwap}]** {settings['c_vwap']} ETH VWAP\n"
+            f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 6_", inline=False)
-        embed.add_embed_field(name="**Alert Time / Price**", value=f"_{alert_time_formatted}_ EST | {self.cpl}_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 6", inline=False)
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
+
         return embed   
     def execute(self):
         embed = self.discord_message()

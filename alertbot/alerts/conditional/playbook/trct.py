@@ -87,19 +87,19 @@ class TRCT(Base):
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
             self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
             self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
             self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
             self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
-            day_type = "Rotational"
+            day_type = "Semi-Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
             self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
             self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
-            day_type = "Directional"
+            day_type = "Semi-Directional"
         else:
             day_type = "Other"
         logger.debug(f" TRCT | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
@@ -999,12 +999,12 @@ class TRCT(Base):
             raise ValueError(f" TRCT | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         if self.direction == "long":
             if self.vwap_slope > 0.05:
-                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100})\n"
+                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100}°)\n"
             else:
                 inline_text = f"Strong Slope to dVWAP \n"
         elif self.direction == "short":
             if self.vwap_slope < -0.05:
-                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100})\n"
+                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100}°)\n"
             else:
                 inline_text = f"Strong Slope to dVWAP \n"        
         # Title Construction with Emojis
@@ -1013,37 +1013,33 @@ class TRCT(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: _{settings['destination']} of the session in the last hour\n"
-                f"**Risk**: Wrong if auction stops OTF for more than one 30m period, accepts back inside IB, or returns to VWAP\n"
-                f"**Driving Input**:The auction is presenting a trend day. This trade seeks entry with the participants who are driving trend.\n"
+                f"**Destination**: {settings['destination']} of the session in the last hour \n"
+                f"**Risk**: Wrong if auction stops OTF for more than one 30m period, accepts back inside IB, or returns to VWAP \n"
+                f"**Driving Input**: The auction is presenting a trend day. This trade seeks entry with the participants who are driving trend \n"
             ),
             color=self.get_color()
         )
-        embed.set_timestamp()  # Automatically sets the timestamp to current time
+        embed.set_timestamp() 
 
-        # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
-        # Criteria Details
         criteria = (
-            f"• [{self.c_trend_day}] Trend Day | [{self.c_strong_trending}] Strong Trending\n"
-            f"• [{self.c_otf}] One Time Framing \n"
-            f"• [{self.c_iba}] Acceptance Outside of IB Range\n"
-            f"• [{self.c_strong_vwap}] {inline_text}"
-            f"• [{self.c_trending_acceptance}] Holding In Trending Channel\n"
-            f"• [{self.c_v_fp}] Value Following Price\n"
-            f"• [{self.c_sm}] {settings['mid']} RTH Mid\n"
-            f"• [{self.c_rotational}] Prior Day Was Rotational\n"
-            f"• [{self.c_fd_exp}] Within 1 Expected Move of the 5D\n"
+            f"- **[{self.c_trend_day}]** Trend Day | [{self.c_strong_trending}] Strong Trending \n"
+            f"- **[{self.c_otf}]** One Time Framing \n"
+            f"- **[{self.c_iba}]** Acceptance Outside of IB Range \n"
+            f"- **[{self.c_strong_vwap}]** {inline_text}"
+            f"- **[{self.c_trending_acceptance}]** Holding In Trending Channel \n"
+            f"- **[{self.c_v_fp}]** Value Following Price \n"
+            f"- **[{self.c_sm}]** {settings['mid']} RTH Mid \n"
+            f"- **[{self.c_rotational}]** Prior Day Was Rotational \n"
+            f"- **[{self.c_fd_exp}]** Within 1 Expected Move of the 5D \n"
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
-        # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 9_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 9", inline=False)
         
-        # Alert Time and Price Context
-        alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
-        embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
     

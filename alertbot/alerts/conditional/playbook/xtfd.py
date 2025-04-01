@@ -92,57 +92,57 @@ class XTFD(Base):
         if self.prior_high <= self.prior_ibh and self.prior_low >= self.prior_ibl:
             day_type = "Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high > self.prior_ibh and 
-              self.prior_close >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_close >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high > self.prior_ibh and 
-              self.prior_close <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_close <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low < self.prior_ibl and
-              self.prior_close >= (self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)) and
-              self.prior_close <= (self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl))):
+            self.prior_close >= (self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)) and
+            self.prior_close <= (self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl))):
             day_type = "Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and 
-              self.prior_high <= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_high <= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Rotational"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and 
-              self.prior_low >= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_low >= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-              self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-              self.prior_close >= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+            self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+            self.prior_close >= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-              self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-              self.prior_high >= self.prior_ibh + 1.25 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+            self.prior_high >= self.prior_ibh + 1.25 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and
-              self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
-              self.prior_close <= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):
+            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
+            self.prior_close <= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and
-              self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
-              self.prior_low <= self.prior_ibl - 1.25 * (self.prior_ibh - self.prior_ibl)):
+            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
+            self.prior_low <= self.prior_ibl - 1.25 * (self.prior_ibh - self.prior_ibl)):
             day_type = "Directional"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-              self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
-              self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Rotational"
+            self.prior_high >= self.prior_ibh + 0.5 * (self.prior_ibh - self.prior_ibl) and
+            self.prior_high <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+            day_type = "Semi-Rotational"
         elif (self.prior_high > self.prior_ibh and self.prior_low >= self.prior_ibl and
-              self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
-              self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
-            day_type = "Directional"
-        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  
-              self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and
-              self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):  
-            day_type = "Rotational"
-        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and 
-              self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and
-              self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)):  
-            day_type = "Directional"
+            self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
+            self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
+            day_type = "Semi-Directional"
+        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
+            self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
+            self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
+            day_type = "Semi-Rotational"
+        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
+            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
+            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
+            day_type = "Semi-Directional"
         else:
             day_type = "Other"
-        logger.debug(f"XTFD | prior_day | Product {self.product_name} | Prior Day Type: {day_type}")
-        return day_type    
+        logger.debug(f" XTFD | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
+        return day_type 
     
     def exp_range(self):
         if not self.prior_close:
@@ -587,7 +587,7 @@ class XTFD(Base):
             title=title,
             description=(
                 f"**Destination**: {self.day_vpoc} (DVPOC) \n"
-                f"**Risk**: Wrong if Price is Unable to Accept Inside IB\n"
+                f"**Risk**: Wrong if Price is Unable to Accept Inside IB \n"
                 f"**Driving Input**: IB Is Extended and Price is Divergent to Value \n"
             ),
             color=self.get_color()
@@ -612,9 +612,9 @@ class XTFD(Base):
         )
         embed.add_embed_field(name="\u200b", value=criteria, inline=False)
 
-        embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 11_", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 11", inline=False)
         
-        alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
+        alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
         embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
