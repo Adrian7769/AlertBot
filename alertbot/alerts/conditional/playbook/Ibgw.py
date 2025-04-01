@@ -447,12 +447,12 @@ class IBGW(Base):
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: Composite reference criteria not met -> [{self.c_composite_ref}]")
                     
                     # CRITERIA 10: Prior Session Balanced (Rotational)
-                    if self.prior_day() == "Rotational":
+                    if self.prior_day() in ["Rotational", "Semi-Rotational"]:
                         self.c_rotational = "x"
-                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() returned Rotational -> [{self.c_rotational}]")
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() returned Rotational or Semi-Rotational -> [{self.c_rotational}]")
                     else:
                         self.c_rotational = "  "
-                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() did not return Rotational -> [{self.c_rotational}]")
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() did not return Rotational or Semi-Rotational -> [{self.c_rotational}]")
                     
                     # CRITERIA 11: Noticeable Slope to VWAP
                     if self.direction == "short":

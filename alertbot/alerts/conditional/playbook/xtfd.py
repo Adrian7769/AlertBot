@@ -492,12 +492,12 @@ class XTFD(Base):
                         logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: vwap_touch() True -> [{self.c_touch_vwap}]")
                     
                     # Logic for Prior Session Directional Check
-                    if self.prior_day() == "Directional":
+                    if self.prior_day() in ["Directional", "Semi-Directional"]:
                         self.c_directional = "x"
-                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() returned Directional -> [{self.c_directional}]")
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() returned Directional or Semi-Directional -> [{self.c_directional}]")
                     else:
                         self.c_directional = "  "
-                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() did not return Directional -> [{self.c_directional}]")
+                        logger.debug(f" XTFD | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8: prior_day() did not return Directional or Semi-Directional -> [{self.c_directional}]")
                     
                     # Logic for Within 1SD of VWAP
                     if self.direction == "short":

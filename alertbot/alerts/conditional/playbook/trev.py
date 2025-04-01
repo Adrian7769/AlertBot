@@ -144,8 +144,8 @@ class TREV(Base):
             return condition
         if self.direction == "short":
             crit1 = log_condition(
-                self.prior_low > self.prior_prior_high,
-                f"CRITICAL1: prior_low({self.prior_low}) > prior_prior_high({self.prior_prior_high})"
+                self.prior_low > self.prior_prior_high - 0.1 * (self.prior_prior_high - self.prior_prior_low),
+                f"CRITICAL1 (short): prior_low({self.prior_low}) > prior_prior_high({self.prior_prior_high}) - 10% overlap of range({self.prior_prior_high - self.prior_prior_low})"
             )
             crit2 = log_condition(
                 self.prior_vpoc > self.prior_low + 0.33 * (self.prior_high - self.prior_low),
@@ -157,8 +157,8 @@ class TREV(Base):
             )
         elif self.direction == "long":
             crit1 = log_condition(
-                self.prior_high < self.prior_prior_low,
-                f"CRITICAL1: prior_high({self.prior_high}) < prior_prior_low({self.prior_prior_low})"
+                self.prior_high < self.prior_prior_low + 0.1 * (self.prior_prior_high - self.prior_prior_low),
+                f"CRITICAL1 (long): prior_high({self.prior_high}) < prior_prior_low({self.prior_prior_low}) + 10% overlap of range({self.prior_prior_high - self.prior_prior_low})"
             )
             crit2 = log_condition(
                 self.prior_vpoc < self.prior_high - 0.33 * (self.prior_high - self.prior_low),
@@ -179,7 +179,6 @@ class TREV(Base):
         logger.debug(f"TREV | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "
                     f"CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4} | CRITICAL5: {crit5}")
         return logic
-
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
