@@ -87,7 +87,7 @@ class Gap_Check_Equity(Base):
             
             impvol = config.cl_impvol
 
-            color_name = self.product_color.get(local_product, "black") 
+            color_name = self.product_color.get(local_product, ":black_large_square:") 
             color_value = self.get_color(local_product)
 
             exp_range = self.exp_range(prior_close, impvol)
@@ -100,7 +100,7 @@ class Gap_Check_Equity(Base):
                 }
                 
                 try:
-                    embed_title = f":{color_name}_large_square: **{local_product} - Context Alert - Gap** {direction_emojis[gap]}"
+                    embed_title = f"{color_name} **{local_product} - Context Alert - Gap** {direction_emojis[gap]}"
                     embed = DiscordEmbed(
                         title=embed_title,
                         description=(

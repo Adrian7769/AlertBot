@@ -31,11 +31,11 @@ class Base:
             'QuickSheet': os.getenv("DISCORD_QUICKSHEET_WEBHOOK")
         }
         self.product_color = {
-            'ES': "blue",   
-            'NQ': "green",  
-            'RTY': "orange",  
-            'CL': "purple",   
-            'QuickSheet': "black",
+            'ES': ":blue_square:",   
+            'NQ': ":green_square:",  
+            'RTY': ":orange_square:",  
+            'CL': ":purple_square:",   
+            'QuickSheet': ":black_large_square",
         }
         self.product_name = product_name
         self.variables = variables

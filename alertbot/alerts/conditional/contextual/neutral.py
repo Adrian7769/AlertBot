@@ -110,8 +110,7 @@ class NEUTRAL(Base):
             logger.debug(f" NEUTRAL | check | Product: {self.product_name} | Note: No alert sent")
 # ---------------------------------- Alert Preparation------------------------------------ # 
     def discord_message(self):
-        pro_color = self.product_color.get(self.product_name, 0x808080)  # Default to grey if not found
-        alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
+        color_name = self.product_color.get(self.product_name, ":black_large_square:")   # Default to grey if not found
 
         direction_emojis = {
             'Higher': '🔼',
@@ -121,17 +120,14 @@ class NEUTRAL(Base):
         arrow = direction_emojis.get(self.neutral_type, '')
 
         embed = DiscordEmbed(
-            title=f":large_square: **{self.product_name} - Context Alert - IB** :large_square:",
+            title=f"{color_name} **{self.product_name} - Context Alert - Neutral Activity**",
             description=(
                 f"> {arrow}   **NEUTRAL**    {arrow}\n"
-                f"- Neutral Activity: IB Extension {arrow}!"
+                f"- Neutral Activity Detected!"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()  # Automatically sets the timestamp to current time
-
-        # Alert Time Context
-        embed.add_embed_field(name="**Alert Time**", value=f"_{alert_time_formatted}_ EST", inline=False)
 
         return embed 
     

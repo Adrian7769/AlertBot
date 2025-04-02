@@ -133,15 +133,14 @@ class PRE_IB_BIAS(Base):
 # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
         
-        pro_color = self.product_color.get(self.product_name, 0x808080)  # Default to grey if not found
-        alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
+        color_name = self.product_color.get(self.product_name, ":black_large_square:") 
         
         direction_settings = {
             "above": {
-                "text": "Above"
+                "text": "Above",
             },
             "below": {
-                "text": "Below"
+                "text": "Below",
             }
         }
 
@@ -150,20 +149,17 @@ class PRE_IB_BIAS(Base):
             raise ValueError(f" PRE_IB | discord_message | Note: Invalid direction '{self.direction}'")
 
         # Title Construction with Emojis
-        title = f":large_{pro_color}_square: **{self.product_name} - Context Alert - Bias** :large_{pro_color}_square: **{self.direction.capitalize()} {settings['text']}**"
+        title = f"{color_name} **{self.product_name} - Context Alert - Bias Violation**"
 
         embed = DiscordEmbed(
             title=title,
             description=(
                 f"> :warning:   **PRE-IB BIAS CHALLENGED**    :warning:\n"
-                f"- Price Trading {settings['text']} *_{self.price}_*!"
+                f"- Price Trading {settings['text']} **{self.price}**!"
             ),
             color=self.get_color()
         )
         embed.set_timestamp()  # Automatically sets the timestamp to current time
-
-        # Alert Time Context
-        embed.add_embed_field(name="**Alert Time**", value=f"_{alert_time_formatted}_ EST", inline=False)
 
         return embed 
     

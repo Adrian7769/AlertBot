@@ -175,7 +175,7 @@ class IB_Equity_Alert(Base):
             impvol = config.cl_impvol
             vwap_slope = variables.get(f'{local_product}_VWAP_SLOPE')
 
-            color_name = self.product_color.get(local_product, "black") 
+            color_name = self.product_color.get(local_product, ":black_large_square:") 
             color_value = self.get_color(local_product)
             
             # Calculations
@@ -202,7 +202,7 @@ class IB_Equity_Alert(Base):
             
             # Build the Discord Embed
             try:
-                embed_title = f":{color_name}_large_square: **{local_product} - Context - IB Check-In** :loudspeaker:"
+                embed_title = f"{color_name} **{local_product} - Context - IB Check-In** :loudspeaker:"
                 embed = DiscordEmbed(
                     title=embed_title,
                     description=(

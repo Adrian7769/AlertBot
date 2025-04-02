@@ -84,7 +84,7 @@ class Gap_Check_Crude(Base):
             prior_high = round(variables.get(f'{local_product}_PRIOR_HIGH'), 2)
             prior_low = round(variables.get(f'{local_product}_PRIOR_LOW'), 2)
             impvol = config.cl_impvol
-            color_name = self.product_color.get(local_product, "black") 
+            color_name = self.product_color.get(local_product, ":black_large_square:") 
             color_value = self.get_color(local_product)
             exp_range = self.exp_range(prior_close, impvol)
             gap, gap_tier, gap_size = self.gap_info(day_open, prior_high, prior_low, exp_range)
@@ -96,7 +96,7 @@ class Gap_Check_Crude(Base):
                 }
                 
                 try:
-                    embed_title = f":{color_name}_large_square: **{local_product} - Context Alert - Gap** {direction_emojis[gap]}"
+                    embed_title = f"{color_name} **{local_product} - Context Alert - Gap** {direction_emojis[gap]}"
                     embed = DiscordEmbed(
                         title=embed_title,
                         description=(
