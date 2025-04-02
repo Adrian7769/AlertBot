@@ -70,163 +70,92 @@ class DOGW(Base):
             return 0 
 
     # ---------------------------------- Specific Calculations ------------------------------------ #   
-    def open_type_algorithm(self): 
-        # Calculate A period statistics
-        a_period_mid = self.safe_round(((self.a_high + self.a_low) / 2))
-        a_period_range = self.a_high - self.a_low
-        five_pct = 0.05 * a_period_range
-        fifteen_pct = 0.15 * a_period_range
-        twentyfive_pct = 0.25 * a_period_range
-        top_0 = self.a_high
-        top_5 = self.a_high - five_pct
-        top_15 = self.a_high - fifteen_pct
-        top_25 = self.a_high - twentyfive_pct
-        bottom_0 = self.a_low
-        bottom_5 = self.a_low + five_pct
-        bottom_15 = self.a_low + fifteen_pct
-        bottom_25 = self.a_low + twentyfive_pct
-        open_type = "Wait" 
+    def compute_a_thresholds(self):
+        """Compute key thresholds based on A period values."""
+        a_period_mid = self.safe_round((self.a_high + self.a_low) / 2)
+        a_range = self.a_high - self.a_low
+        return {
+            "a_mid": a_period_mid,
+            "top_0": self.a_high,
+            "top_5": self.a_high - 0.05 * a_range,
+            "top_15": self.a_high - 0.15 * a_range,
+            "top_25": self.a_high - 0.25 * a_range,
+            "bottom_0": self.a_low,
+            "bottom_5": self.a_low + 0.05 * a_range,
+            "bottom_15": self.a_low + 0.15 * a_range,
+            "bottom_25": self.a_low + 0.25 * a_range,
+        }
 
-        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                    f"Computed A Period Values: a_high={self.a_high}, a_low={self.a_low}, "
-                    f"a_period_mid={a_period_mid}, a_period_range={a_period_range}, "
-                    f"top_0={top_0}, top_5={top_5}, top_15={top_15}, top_25={top_25}, "
-                    f"bottom_0={bottom_0}, bottom_5={bottom_5}, bottom_15={bottom_15}, bottom_25={bottom_25}")
+    def open_type_algorithm(self):
+        # Compute thresholds from A period
+        thresholds = self.compute_a_thresholds()
+        logger.debug(f"Computed A thresholds: {thresholds}")
 
-        # Get current time from EST
+        # Get current time and determine if B period is active
         self.current_datetime = datetime.now(self.est)
         self.current_time = self.current_datetime.time()
-        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                    f"Current Time: {self.current_time}")
+        b_period_start = time(9, 30) if self.product_name == 'CL' else time(10, 0)
+        b_active = self.current_time >= b_period_start
+        logger.debug(f"B period active: {b_active} (current_time={self.current_time}, start={b_period_start})")
 
-        # Determine B period start time based on product
-        if self.product_name == 'CL':
-            b_period_start_time = time(9, 30)  
-        else:
-            b_period_start_time = time(10, 0)  
-        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                    f"B Period Start Time: {b_period_start_time}")
-
-        b_period_active = self.current_time >= b_period_start_time
-        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                    f"B Period Active: {b_period_active}")
-
+        # Calculate overlap percentage if B period is active and data is available
         overlap_pct = 0
-        if b_period_active and self.b_high > 0 and self.b_low > 0:
+        if b_active and self.b_high and self.b_low:
             overlap = max(0, min(self.day_high, self.prior_high) - max(self.day_low, self.prior_low))
             total_range = self.day_high - self.day_low
             overlap_pct = overlap / total_range if total_range > 0 else 0
-            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                        f"B Period Data: b_high={self.b_high}, b_low={self.b_low}, "
-                        f"day_high={self.day_high}, prior_high={self.prior_high}, "
-                        f"day_low={self.day_low}, prior_low={self.prior_low} | "
-                        f"Overlap={overlap}, Total Range={total_range}, Overlap %={overlap_pct}")
-        else:
-            if b_period_active:
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"B Period Active but missing data: b_high={self.b_high}, b_low={self.b_low}")
-            else:
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"B Period Not Active (current_time={self.current_time} < required={b_period_start_time})")
+            logger.debug(f"Overlap %: {overlap_pct}")
 
-        # Evaluate conditions based on whether B period is active or not
-        if not b_period_active:
-            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                        f"Evaluating A Period Conditions with day_open={self.day_open}")
+        # Evaluate conditions when B period is not active (using only A period data)
+        if not b_active:
+            logger.debug(f"Evaluating A period conditions with day_open={self.day_open}")
             if self.day_open == self.a_high:
-                open_type = "OD v"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"Condition: day_open == a_high ({self.day_open} == {self.a_high}) => Open Type: {open_type}")
+                return "OD v"
             elif self.day_open == self.a_low:
-                open_type = "OD ^"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"Condition: day_open == a_low ({self.day_open} == {self.a_low}) => Open Type: {open_type}")
-            elif top_5 < self.day_open < top_0:
-                open_type = "OTD v"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"Condition: top_5 < day_open < top_0 ({top_5} < {self.day_open} < {top_0}) => Open Type: {open_type}")
-            elif bottom_0 < self.day_open < bottom_5:
-                open_type = "OTD ^"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"Condition: bottom_0 < day_open < bottom_5 ({bottom_0} < {self.day_open} < {bottom_5}) => Open Type: {open_type}")
+                return "OD ^"
+            elif thresholds["top_5"] < self.day_open < thresholds["top_0"]:
+                return "OTD v"
+            elif thresholds["bottom_0"] < self.day_open < thresholds["bottom_5"]:
+                return "OTD ^"
             else:
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"No A Period condition met; defaulting to Wait")
+                return "Wait"
+
+        # Evaluate conditions when B period is active
         else:
-            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                        f"Evaluating B Period Conditions with day_open={self.day_open}")
+            logger.debug(f"Evaluating B period conditions with day_open={self.day_open}")
             if self.b_high == 0 and self.b_low == 0:
-                open_type = "Wait"
-                logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                            f"B Period data is zero (b_high={self.b_high}, b_low={self.b_low}); Open Type set to Wait")
+                return "Wait"
+            if self.day_open == self.a_high:
+                return "OD v"
+            elif self.day_open == self.a_low:
+                return "OD ^"
+            elif thresholds["top_5"] < self.day_open < thresholds["top_0"]:
+                return "OTD v"
+            elif thresholds["bottom_0"] < self.day_open < thresholds["bottom_5"]:
+                return "OTD ^"
+            elif thresholds["top_15"] < self.day_open <= thresholds["top_5"] and self.b_high < thresholds["a_mid"]:
+                return "OTD v"
+            elif thresholds["bottom_5"] < self.day_open <= thresholds["bottom_15"] and self.b_low > thresholds["a_mid"]:
+                return "OTD ^"
+            elif thresholds["top_25"] < self.day_open <= thresholds["top_15"] and self.b_high < thresholds["bottom_25"]:
+                return "OTD v"
+            elif thresholds["bottom_15"] <= self.day_open < thresholds["bottom_25"] and self.b_low > thresholds["top_25"]:
+                return "OTD ^"
+            elif self.day_open > thresholds["top_25"] and self.b_low > thresholds["a_mid"]:
+                return "ORR ^"
+            elif self.day_open < thresholds["bottom_25"] and self.b_high < thresholds["a_mid"]:
+                return "ORR v"
             else:
-                if self.day_open == self.a_high:
-                    open_type = "OD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: day_open == a_high ({self.day_open} == {self.a_high}) => Open Type: {open_type}")
-                elif self.day_open == self.a_low:
-                    open_type = "OD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: day_open == a_low ({self.day_open} == {self.a_low}) => Open Type: {open_type}")
-                elif top_5 < self.day_open < top_0:
-                    open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: top_5 < day_open < top_0 ({top_5} < {self.day_open} < {top_0}) => Open Type: {open_type}")
-                elif bottom_0 < self.day_open < bottom_5:
-                    open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: bottom_0 < day_open < bottom_5 ({bottom_0} < {self.day_open} < {bottom_5}) => Open Type: {open_type}")
-                elif top_15 < self.day_open <= top_5 and self.b_high < a_period_mid:
-                    open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: top_15 < day_open <= top_5 ({top_15} < {self.day_open} <= {top_5}) and "
-                                f"b_high < a_period_mid ({self.b_high} < {a_period_mid}) => Open Type: {open_type}")
-                elif bottom_5 < self.day_open <= bottom_15 and self.b_low > a_period_mid:
-                    open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: bottom_5 < day_open <= bottom_15 ({bottom_5} < {self.day_open} <= {bottom_15}) and "
-                                f"b_low > a_period_mid ({self.b_low} > {a_period_mid}) => Open Type: {open_type}")
-                elif top_25 < self.day_open <= top_15 and self.b_high < bottom_25:
-                    open_type = "OTD v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: top_25 < day_open <= top_15 ({top_25} < {self.day_open} <= {top_15}) and "
-                                f"b_high < bottom_25 ({self.b_high} < {bottom_25}) => Open Type: {open_type}")
-                elif bottom_15 <= self.day_open < bottom_25 and self.b_low > top_25:
-                    open_type = "OTD ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: bottom_15 <= day_open < bottom_25 ({bottom_15} <= {self.day_open} < {bottom_25}) and "
-                                f"b_low > top_25 ({self.b_low} > {top_25}) => Open Type: {open_type}")
-                elif self.day_open > top_25 and self.b_low > a_period_mid:
-                    open_type = "ORR ^"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: day_open > top_25 ({self.day_open} > {top_25}) and "
-                                f"b_low > a_period_mid ({self.b_low} > {a_period_mid}) => Open Type: {open_type}")
-                elif self.day_open < bottom_25 and self.b_high < a_period_mid:
-                    open_type = "ORR v"
-                    logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                f"Condition: day_open < bottom_25 ({self.day_open} < {bottom_25}) and "
-                                f"b_high < a_period_mid ({self.b_high} < {a_period_mid}) => Open Type: {open_type}")
+                if overlap_pct >= 0.25:
+                    return "OAIR"
                 else:
-                    if overlap_pct >= 0.25:
-                        open_type = "OAIR"
-                        logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                    f"Condition: overlap_pct >= 0.25 ({overlap_pct} >= 0.25) => Open Type: {open_type}")
-                    elif overlap_pct < 0.25:
-                        if self.day_open > self.prior_high:
-                            open_type = "OAOR ^"
-                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                        f"Condition: day_open > prior_high ({self.day_open} > {self.prior_high}) => Open Type: {open_type}")
-                        elif self.day_open < self.prior_low:
-                            open_type = "OAOR v"
-                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                        f"Condition: day_open < prior_low ({self.day_open} < {self.prior_low}) => Open Type: {open_type}")
-                        else:
-                            open_type = "OAIR"
-                            logger.debug(f"DOGW | open_type_algorithm | Product: {self.product_name} | "
-                                        f"No clear criteria met; defaulting to OAIR => Open Type: {open_type}")
-        logger.debug(f"DOGW | open_type_algorithm | Determined Open Type: {open_type} | Product: {self.product_name}")
-        return open_type
-  
+                    if self.day_open > self.prior_high:
+                        return "OAOR ^"
+                    elif self.day_open < self.prior_low:
+                        return "OAOR v"
+                    else:
+                        return "OAIR"
+
         
     def exp_range(self):
 
@@ -348,7 +277,8 @@ class DOGW(Base):
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition False -> [{self.c_within_atr}]")
                     
                     # CRITERIA 2: 50% of ETH Expected Range Left
-                    self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
+                    self.day_range_used = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
+                    self.range_used = round((self.day_range_used / self.exp_rng),2)
                     if self.range_used <= 0.5:
                         self.c_exp_rng = "x"
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition met -> [{self.c_exp_rng}]")
@@ -475,7 +405,7 @@ class DOGW(Base):
             f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
             f"- **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
         )
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
+        embed.add_embed_field(name="", value=criteria, inline=False)
 
         # Playbook Score
         embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 7", inline=False)

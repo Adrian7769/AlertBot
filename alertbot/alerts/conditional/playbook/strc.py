@@ -262,7 +262,7 @@ class STRC(Base):
             f"- **[{self.c_align}]** DVWAP and PVPOC aligned\n"
         )
         
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
+        embed.add_embed_field(name="", value=criteria, inline=False)
         embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 5", inline=False)
         alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
         embed.add_embed_field(name="", value=alert_time_text, inline=False)

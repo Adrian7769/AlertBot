@@ -212,8 +212,8 @@ class TRCT(Base):
 
             # CRITICAL4: Prior session must be rotational.
             prior_day_type = self.prior_day()
-            condition4 = prior_day_type in ["Rotational"]
-            logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: prior_day({prior_day_type}) == 'Rotational' --> {condition4}")
+            condition4 = (prior_day_type in ["Rotational", "Semi-Rotational"])
+            logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: prior_day({prior_day_type}) == 'Rotational' or 'Semi-Rotational' --> {condition4}")
 
             # CRITICAL5: self.cpl must be greater than current session MID.
             current_mid = (self.day_high + self.day_low) / 2
@@ -281,6 +281,7 @@ class TRCT(Base):
             final_logic = condition1 and acceptance and condition3 and condition4 and condition5 and condition6 and condition7
             logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {final_logic} | CRITICAL1: {condition1} | CRITICAL2: {acceptance} | CRITICAL3: {condition3} | CRITICAL4: {condition4} | CRITICAL5: {condition5} | CRITICAL6: {condition6} | CRITICAL7: {condition7}")
             
+            self.value_following_price = condition7
             self.ib_acceptance_l = acceptance  # For Check Method.
             return final_logic
 
@@ -328,8 +329,8 @@ class TRCT(Base):
 
             # CRITICAL4: Prior session must be rotational.
             prior_day_type = self.prior_day()
-            condition4 = prior_day_type in ["Rotational"]
-            logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: prior_day({prior_day_type}) == 'Rotational' --> {condition4}")
+            condition4 = (prior_day_type in ["Rotational", "Semi-Rotational"])
+            logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: prior_day({prior_day_type}) == 'Rotational' or 'Semi-Rotational' --> {condition4}")
 
             # CRITICAL5: self.cpl must be less than current session MID.
             current_mid = (self.day_high + self.day_low) / 2
@@ -402,287 +403,6 @@ class TRCT(Base):
             return final_logic
         else:
             logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: False | No valid direction detected.")
-            return False
-
-    def strong_trending(self):
-        """
-        For a 'strong trending':
-        -- LONG direction:
-            1) After IBH extension, no new period lows below the previous period low
-                if that previous low is itself below `eth_top_1_{previous_period}`.
-            2) Prior session must be 'Rotational'.
-            3) After IBH extension, no sub-period's low can be <= that sub-period's ETH VWAP.
-            4) cpl > session MID.
-            5) One-time framing >= 3 consecutive sub-periods with higher highs & higher lows
-                after the extension sub-period.
-            6) Single prints must be present.
-
-            -- SHORT direction:
-            1) After IBL extension, no new period highs above the previous period high
-                if that previous high is itself above `eth_bottom_1_{previous_period}`.
-            2) Prior session must be 'Rotational'.
-            3) After IBL extension, no sub-period's high can be >= that sub-period's ETH VWAP.
-            4) cpl < session MID.
-            5) One-time framing >= 3 consecutive sub-periods with lower highs & lower lows
-                after the extension sub-period.
-            6) Single prints must be present.
-        """
-        if self.product_name == "CL":
-            period_times = {
-                'A': time(9, 0), 'B': time(9, 30), 'C': time(10, 0),
-                'D': time(10, 30), 'E': time(11, 0), 'F': time(11, 30),
-                'G': time(12, 0), 'H': time(12, 30), 'I': time(13, 0),
-                'J': time(13, 30), 'K': time(14, 0),
-            }
-        else:
-            period_times = {
-                'A': time(9, 30), 'B': time(10, 0), 'C': time(10, 30),
-                'D': time(11, 0), 'E': time(11, 30), 'F': time(12, 0),
-                'G': time(12, 30), 'H': time(13, 0), 'I': time(13, 30),
-                'J': time(14, 0), 'K': time(14, 30), 'L': time(15, 0),
-                'M': time(15, 30),
-            }
-
-        now = datetime.now(ZoneInfo('America/New_York')).time()
-        sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
-        finished_periods = [p for p, t in sorted_periods if t <= now]
-        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | TPO Periods: {finished_periods}")
-
-        if not finished_periods:
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | No finished periods. Returning False.")
-            return False
-
-        # Decide direction
-        if self.direction == "long":
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Checking LONG strong trending criteria...")
-
-            # 1) Find IBH extension
-            ext_found = False
-            ext_index = None
-            for i, period in enumerate(finished_periods):
-                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                if p_high is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing HIGH. Skipping.")
-                    continue
-                if self.safe_round(p_high) > self.ib_high:
-                    ext_found = True
-                    ext_index = i
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Found IBH extension at period {period}, index={i}, p_high={p_high}.")
-                    break
-            if not ext_found:
-                logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | No IBH extension found. Returning False.")
-                return False
-
-            # Trending channel acceptance
-            trending_acceptance = True
-            outside_low = None
-            for i in range(ext_index, len(finished_periods)):
-                period = finished_periods[i]
-                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                p_top1 = self.variables.get(f"{self.product_name}_ETH_TOP_1_{period}")
-                if p_low is None or p_top1 is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Missing data (LOW or TOP_1) for period {period}. Skipping.")
-                    continue
-                p_low = self.safe_round(p_low)
-                p_top1 = self.safe_round(p_top1)
-                if p_low < p_top1:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} outside channel. low({p_low}) < top1({p_top1}).")
-                    if outside_low is None:
-                        outside_low = p_low
-                        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Setting outside_low={outside_low}.")
-                    else:
-                        if p_low < outside_low:
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | New lower outside low={p_low} < old outside_low={outside_low}. Failing.")
-                            trending_acceptance = False
-                            break
-
-            # 2) Prior session must be 'Rotational'
-            prior_session_type = self.prior_day()
-            condition2 = (prior_session_type == "Rotational")
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' --> {condition2}")
-
-            # 3) No VWAP Touch after IBH extension
-            condition3 = True
-            for i in range(ext_index + 1, len(finished_periods)):
-                period = finished_periods[i]
-                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                if p_low is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing LOW. Skipping.")
-                    continue
-                p_low = self.safe_round(p_low)
-                vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
-                period_vwap = self.variables.get(vwap_var)
-                if period_vwap is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing VWAP. Skipping.")
-                    continue
-                period_vwap = self.safe_round(period_vwap)
-                if p_low <= period_vwap:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} low({p_low}) <= vwap({period_vwap}). Failing CRITICAL3.")
-                    condition3 = False
-                    break
-
-            # 4) cpl > session MID
-            session_mid = (self.day_high + self.day_low) / 2
-            condition4 = (self.cpl > session_mid)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: cpl({self.cpl}) > session_mid({session_mid}) --> {condition4}")
-
-            # 5) One-time framing >= 3 consecutive sub-periods after the extension
-            one_time_count = 0
-            if ext_index < len(finished_periods) - 1:
-                prev_period = finished_periods[ext_index]
-                prev_high = self.variables.get(f"{self.product_name}_{prev_period}_HIGH")
-                prev_low = self.variables.get(f"{self.product_name}_{prev_period}_LOW")
-                if prev_high is not None and prev_low is not None:
-                    prev_high = self.safe_round(prev_high)
-                    prev_low = self.safe_round(prev_low)
-                    for period in finished_periods[ext_index + 1:]:
-                        cur_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                        cur_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                        if cur_high is None or cur_low is None:
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Missing data in period {period} for OTF check. Skipping.")
-                            continue
-                        cur_high = self.safe_round(cur_high)
-                        cur_low = self.safe_round(cur_low)
-                        if cur_high > prev_high and cur_low > prev_low:
-                            one_time_count += 1
-                            prev_high = cur_high
-                            prev_low = cur_low
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF +1 => {one_time_count} during (period {period}).")
-                        else:
-                            one_time_count = 0
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 during (period {period}).")
-            condition5 = (one_time_count >= 3)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 3 --> {condition5}")
-
-            # 6) Single prints must be present
-            condition6 = self.single_prints(finished_periods)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL6: single_prints --> {condition6}")
-
-            final_logic = trending_acceptance and condition2 and condition3 and condition4 and condition5 and condition6
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {final_logic} | CRITICAL1: {trending_acceptance} | CRITICAL2: {condition2} | CRITICAL3: {condition3} | CRITICAL4: {condition4} | CRITICAL5: {condition5} | CRITICAL6: {condition6}")
-            
-            # Make Accessible to Check Method.
-            self.trending_acceptance_l = trending_acceptance
-            self.session_mid_l = condition4
-            self.one_time_framing_l = condition5
-            
-            return final_logic
-
-        elif self.direction == "short":
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Checking SHORT strong trending criteria...")
-            # 1) Find IBL extension
-            ext_found = False
-            ext_index = None
-            for i, period in enumerate(finished_periods):
-                p_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                if p_low is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing LOW. Skipping.")
-                    continue
-                if self.safe_round(p_low) < self.ib_low:
-                    ext_found = True
-                    ext_index = i
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Found IBL extension at period {period}, index={i}, p_low={p_low}.")
-                    break
-            if not ext_found:
-                logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | No IBL extension found. Returning False.")
-                return False
-
-            trending_acceptance = True
-            outside_high = None
-            for i in range(ext_index, len(finished_periods)):
-                period = finished_periods[i]
-                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                p_bottom1 = self.variables.get(f"{self.product_name}_ETH_BOTTOM_1_{period}")
-                if p_high is None or p_bottom1 is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Missing data (HIGH or BOTTOM_1) for period {period}. Skipping.")
-                    continue
-                p_high = self.safe_round(p_high)
-                p_bottom1 = self.safe_round(p_bottom1)
-                if p_high > p_bottom1:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} outside channel. high({p_high}) > bottom1({p_bottom1}).")
-                    if outside_high is None:
-                        outside_high = p_high
-                        logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Setting outside_high={outside_high}.")
-                    else:
-                        if p_high > outside_high:
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | New higher outside high={p_high} > old outside_high={outside_high}. Failing.")
-                            trending_acceptance = False
-                            break
-
-            # 2) Prior session must be 'Rotational'
-            prior_session_type = self.prior_day()
-            condition2 = (prior_session_type == "Rotational")
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' --> {condition2}")
-
-            # 3) No VWAP Touch after IBL extension
-            condition3 = True
-            for i in range(ext_index + 1, len(finished_periods)):
-                period = finished_periods[i]
-                p_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                if p_high is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing HIGH. Skipping.")
-                    continue
-                p_high = self.safe_round(p_high)
-                vwap_var = f"{self.product_name}_ETH_VWAP_{period}"
-                period_vwap = self.variables.get(vwap_var)
-                if period_vwap is None:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} missing VWAP. Skipping.")
-                    continue
-                period_vwap = self.safe_round(period_vwap, 2)
-                if p_high >= period_vwap:
-                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Period {period} high({p_high}) >= vwap({period_vwap}). Failing condition3.")
-                    condition3 = False
-                    break
-
-            # 4) cpl < session MID
-            session_mid = (self.day_high + self.day_low) / 2
-            condition4 = (self.cpl < session_mid)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: cpl({self.cpl}) < session_mid({session_mid}) --> {condition4}")
-
-            # 5) One-time framing >= 3 consecutive sub-periods after the extension
-            one_time_count = 0
-            if ext_index < len(finished_periods) - 1:
-                prev_period = finished_periods[ext_index]
-                prev_high = self.variables.get(f"{self.product_name}_{prev_period}_HIGH")
-                prev_low = self.variables.get(f"{self.product_name}_{prev_period}_LOW")
-                if prev_high is not None and prev_low is not None:
-                    prev_high = self.safe_round(prev_high)
-                    prev_low = self.safe_round(prev_low)
-                    for period in finished_periods[ext_index + 1:]:
-                        cur_high = self.variables.get(f"{self.product_name}_{period}_HIGH")
-                        cur_low = self.variables.get(f"{self.product_name}_{period}_LOW")
-                        if cur_high is None or cur_low is None:
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Missing data in period {period} for OTF check. Skipping.")
-                            continue
-                        cur_high = self.safe_round(cur_high)
-                        cur_low = self.safe_round(cur_low)
-                        if cur_high < prev_high and cur_low < prev_low:
-                            one_time_count += 1
-                            prev_high = cur_high
-                            prev_low = cur_low
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF +1 => {one_time_count} (period {period}).")
-                        else:
-                            one_time_count = 0
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 (period {period}).")
-            condition5 = (one_time_count >= 3)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 3 --> {condition5}")
-
-            # 6) Single prints must be present
-            condition6 = self.single_prints(finished_periods)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL6: single_prints --> {condition6}")
-
-            final_logic = trending_acceptance and condition2 and condition3 and condition4 and condition5 and condition6
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {final_logic} | CRITICAL1: {trending_acceptance} | CRITICAL2: {condition2} | CRITICAL3: {condition3} | CRITICAL4: {condition4} | CRITICAL5: {condition5} | CRITICAL6: {condition6}")
-            
-            self.trending_acceptance_s = trending_acceptance
-            self.prior_session_rotational = condition2
-            self.session_mid_s = condition4
-            self.one_time_framing_s = condition5
-            
-            return final_logic
-
-        else:
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | Invalid direction ({self.direction}). Returning False.")
             return False
 
     def float_range(self, start, stop, step):
@@ -808,7 +528,7 @@ class TRCT(Base):
                 after the extension sub-period.
             6) Single prints must be present.
 
-            -- SHORT direction:
+        -- SHORT direction:
             1) After IBL extension, no new period highs above the previous period high
                 if that previous high is itself above `eth_bottom_1_{previous_period}`.
             2) Prior session must be 'Rotational'.
@@ -838,6 +558,19 @@ class TRCT(Base):
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         finished_periods = [p for p, t in sorted_periods if t <= now]
         logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | TPO Periods: {finished_periods}")
+
+        # Determine current period (the period in which 'now' falls)
+        current_period = None
+        for i, (period, start_time) in enumerate(sorted_periods):
+            if i < len(sorted_periods) - 1:
+                next_start = sorted_periods[i + 1][1]
+                if start_time <= now < next_start:
+                    current_period = period
+                    break
+            else:
+                if now >= start_time:
+                    current_period = period
+                    break
 
         if not finished_periods:
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | No finished periods. Returning False.")
@@ -889,8 +622,8 @@ class TRCT(Base):
 
             # 2) Prior session must be 'Rotational'
             prior_session_type = self.prior_day()
-            condition2 = (prior_session_type == "Rotational")
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' --> {condition2}")
+            condition2 = (prior_session_type in ["Rotational", "Semi-Rotational"])
+            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' or 'Semi-Rotational --> {condition2}")
 
             # 3) No VWAP Touch after IBH extension
             condition3 = True
@@ -917,7 +650,7 @@ class TRCT(Base):
             condition4 = (self.cpl > session_mid)
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: cpl({self.cpl}) > session_mid({session_mid}) --> {condition4}")
 
-            # 5) One-time framing >= 3 consecutive sub-periods after the extension
+            # 5) One-time framing >= 2 consecutive sub-periods after the extension
             one_time_count = 0
             if ext_index < len(finished_periods) - 1:
                 prev_period = finished_periods[ext_index]
@@ -940,10 +673,18 @@ class TRCT(Base):
                             prev_low = cur_low
                             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF +1 => {one_time_count} during (period {period}).")
                         else:
-                            one_time_count = 0
-                            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 during (period {period}).")
-            condition5 = (one_time_count >= 3)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 3 --> {condition5}")
+                            if period == current_period:
+                                # Only reset count for the current period if the current low is less than the prior period low.
+                                if cur_low < prev_low:
+                                    one_time_count = 0
+                                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: In current period {period}, OTF reset to 0 because current low ({cur_low}) < prior low ({prev_low}).")
+                                else:
+                                    logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: In current period {period}, OTF count maintained because current low ({cur_low}) >= prior low ({prev_low}).")
+                            else:
+                                one_time_count = 0
+                                logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 during (period {period}).")
+            condition5 = (one_time_count >= 2)
+            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 2 --> {condition5}")
 
             # 6) Single prints must be present
             condition6 = self.single_prints(finished_periods)
@@ -953,9 +694,10 @@ class TRCT(Base):
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {final_logic} | CRITICAL1: {trending_acceptance} | CRITICAL2: {condition2} | CRITICAL3: {condition3} | CRITICAL4: {condition4} | CRITICAL5: {condition5} | CRITICAL6: {condition6}")
             
             # Make Accessible to Check Method.
-            self.trending_acceptance_l = trending_acceptance
-            self.session_mid_l = condition4
-            self.one_time_framing_l = condition5
+            self.trending_acceptance_s = trending_acceptance
+            self.prior_session_rotational = condition2
+            self.session_mid_s = condition4
+            self.one_time_framing_s = condition5
             
             return final_logic
 
@@ -1002,8 +744,8 @@ class TRCT(Base):
 
             # 2) Prior session must be 'Rotational'
             prior_session_type = self.prior_day()
-            condition2 = (prior_session_type == "Rotational")
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' --> {condition2}")
+            condition2 = (prior_session_type in ["Rotational", "Semi-Rotational"])
+            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL2: prior_day({prior_session_type}) == 'Rotational' or 'Semi-Rotational --> {condition2}")
 
             # 3) No VWAP Touch after IBL extension
             condition3 = True
@@ -1030,7 +772,7 @@ class TRCT(Base):
             condition4 = (self.cpl < session_mid)
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL4: cpl({self.cpl}) < session_mid({session_mid}) --> {condition4}")
 
-            # 5) One-time framing >= 3 consecutive sub-periods after the extension
+            # 5) One-time framing >= 2 consecutive sub-periods after the extension
             one_time_count = 0
             if ext_index < len(finished_periods) - 1:
                 prev_period = finished_periods[ext_index]
@@ -1055,8 +797,8 @@ class TRCT(Base):
                         else:
                             one_time_count = 0
                             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: OTF reset to 0 (period {period}).")
-            condition5 = (one_time_count >= 3)
-            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 3 --> {condition5}")
+            condition5 = (one_time_count >= 2)
+            logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | CRITICAL5: one_time_count({one_time_count}) >= 2 --> {condition5}")
 
             # 6) Single prints must be present
             condition6 = self.single_prints(finished_periods)
@@ -1178,14 +920,14 @@ class TRCT(Base):
                     
                     # Logic For VWAP Strength
                     if self.direction == "short":
-                        if self.vwap_slope < -0.05:
+                        if self.vwap_slope < -0.6:
                             self.c_strong_vwap = "x"
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) < -0.05 -> [{self.c_strong_vwap}]")
                         else:
                             self.c_strong_vwap = "  "
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) >= -0.05 -> [{self.c_strong_vwap}]")
                     elif self.direction == "long":
-                        if self.vwap_slope > 0.05:
+                        if self.vwap_slope > 0.06:
                             self.c_strong_vwap = "x"
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) > 0.05 -> [{self.c_strong_vwap}]")
                         else:
@@ -1330,7 +1072,7 @@ class TRCT(Base):
         embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
         criteria = (
-            f"- **[{self.c_trend_day}]** Trend Day | [{self.c_strong_trending}] Strong Trending \n"
+            f"- **[{self.c_trend_day}]** Trend Day | **[{self.c_strong_trending}]** Strong Trending \n"
             f"- **[{self.c_otf}]** One Time Framing \n"
             f"- **[{self.c_iba}]** Acceptance Outside of IB Range \n"
             f"- **[{self.c_strong_vwap}]** {inline_text}"
@@ -1340,7 +1082,7 @@ class TRCT(Base):
             f"- **[{self.c_rotational}]** Prior Day Was Rotational \n"
             f"- **[{self.c_fd_exp}]** Within 1 Expected Move of the 5D \n"
         )
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
+        embed.add_embed_field(name="", value=criteria, inline=False)
 
         embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 9", inline=False)
         

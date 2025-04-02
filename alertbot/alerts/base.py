@@ -120,11 +120,11 @@ class Base:
     def get_color(self, product_name: Optional[str] = None):
         prod = product_name if product_name is not None else self.product_name        
         color_mapping = {
-            "blue": 0x3498db,
-            "green": 0x2ecc71,
-            "orange": 0xE67E22,
-            "purple": 0x9B59B6,
-            "black": 0x000000
+            ":blue_square:": 0x3498db,
+            ":green_square:": 0x2ecc71,
+            ":orange_square:": 0xE67E22,
+            ":purple_square:": 0x9B59B6,
+            ":black_large_square:": 0x000000
         }
         color_name = self.product_color.get(prod, "black").lower()
         return color_mapping.get(color_name, 0x000000)

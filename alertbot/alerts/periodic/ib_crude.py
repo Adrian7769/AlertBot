@@ -194,7 +194,7 @@ class IB_Crude_Alert(Base):
                 a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low
                 )
             
-            if vwap_slope > 0.10 or vwap_slope < -0.10:
+            if vwap_slope >= 0.08 or vwap_slope <= -0.08:
                 vwap_type = "Strong"
             else:
                 vwap_type = "Weak"

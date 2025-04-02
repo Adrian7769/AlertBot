@@ -112,33 +112,33 @@ class IBGP(Base):
             day_type = "Other"
         logger.debug(f" IBGP | prior_day | Product: {self.product_name} | Prior Day Type: {day_type}")
         return day_type
-    def open_type(self, a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low):
-        a_period_mid = round(((a_high + a_low) / 2), 2)
-        current_sub_low = min(a_low, b_low)
-        current_sub_high = max(a_high, b_high)
-        overlap = max(0, min(current_sub_high, prior_high) - max(current_sub_low, prior_low))
-        total_range = day_high - day_low
-        if day_open == a_high and (b_high < a_period_mid):
+    def open_type(self):
+        a_period_mid = round(((self.a_high + self.a_low) / 2), 2)
+        current_sub_low = min(self.a_low, self.b_low)
+        current_sub_high = max(self.a_high, self.b_high)
+        overlap = max(0, min(current_sub_high, self.prior_high) - max(current_sub_low, self.prior_low))
+        total_range = self.day_high - self.day_low
+        if self.day_open == self.a_high and (self.b_high < a_period_mid):
             open_type = "OD v"
-        elif day_open == a_low and (b_low > a_period_mid):
+        elif self.day_open == self.a_low and (self.b_low > a_period_mid):
             open_type = "OD ^"
-        elif (day_open > a_period_mid) and (b_high < a_period_mid):
+        elif (self.day_open > a_period_mid) and (self.b_high < a_period_mid):
             open_type = "OTD v"
-        elif (day_open < a_period_mid) and (b_low > a_period_mid):
+        elif (self.day_open < a_period_mid) and (self.b_low > a_period_mid):
             open_type = "OTD ^"
-        elif (day_open > a_period_mid) and (b_low > a_period_mid) and (b_high > orh):
+        elif (self.day_open > a_period_mid) and (self.b_low > a_period_mid) and (self.b_high > self.orh):
             open_type = "ORR ^"
-        elif (day_open < a_period_mid) and (b_high < a_period_mid) and (b_low < orl):
+        elif (self.day_open < a_period_mid) and (self.b_high < a_period_mid) and (self.b_low < self.orl):
             open_type = "ORR v"
         elif overlap >= 0.5 * total_range:
             open_type = "OAIR"
-        elif (overlap < 0.5 * total_range) and (day_open >= prior_high):
+        elif (overlap < 0.5 * total_range) and (self.day_open >= self.prior_high):
             open_type = "OAOR ^"
-        elif (overlap < 0.5 * total_range) and (day_open <= prior_low):
+        elif (overlap < 0.5 * total_range) and (self.day_open <= self.prior_low):
             open_type = "OAOR v"
         else:
             open_type = "Other"
-        logger.debug(f"IBGP | open_type | Product {self.product_name} | Open Type: {open_type}")                          
+        logger.debug(f"IBGW | open_type | Product {self.product_name} | Open Type: {open_type}")              
         return open_type 
     def exp_range(self):
         if not self.prior_close:
@@ -155,6 +155,7 @@ class IBGP(Base):
         exp_range = self.safe_round(((self.prior_close * (impvol / 100)) * math.sqrt(1/252)))
         logger.debug(f" IBGP | exp_range | Product: {self.product_name} | EXP_RNG: {exp_range}")
         return exp_range
+    
     def one_time_framing(self):
         if self.product_name == "CL":
             period_times = {
@@ -173,14 +174,17 @@ class IBGP(Base):
                 'M': time(15, 30),
             }
             logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Using non-CL period times.")
+
         now = datetime.now(self.est).time()
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Current time: {now}")
+        
         sorted_periods = sorted(period_times.items(), key=lambda x: x[1])
         current_period = None
         finished_periods = []
+        
         for i, (period, start_time) in enumerate(sorted_periods):
             if i < len(sorted_periods) - 1:
-                next_start = sorted_periods[i+1][1]
+                next_start = sorted_periods[i + 1][1]
                 if start_time <= now < next_start:
                     current_period = period
                     finished_periods = [p for p, t in sorted_periods[:i]]
@@ -190,59 +194,68 @@ class IBGP(Base):
                     current_period = period
                     finished_periods = [p for p, t in sorted_periods[:i]]
                     break
+                    
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Current Period: {current_period}")
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Finished periods: {finished_periods}")
+        
         if len(finished_periods) < 2:
             logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Not enough finished periods. Returning False.")
             return False
-        last_two = finished_periods[-2:]
-        period1, period2 = last_two[0], last_two[1]
+
+        period1, period2 = finished_periods[-2], finished_periods[-1]
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Last two periods selected: {period1}, {period2}")
+        
         p1_high = self.variables.get(f"{self.product_name}_{period1}_HIGH")
         p1_low = self.variables.get(f"{self.product_name}_{period1}_LOW")
         p2_high = self.variables.get(f"{self.product_name}_{period2}_HIGH")
         p2_low = self.variables.get(f"{self.product_name}_{period2}_LOW")
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Prior Two Period Raw values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        
         if None in (p1_high, p1_low, p2_high, p2_low):
             logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | One or more period values missing. Returning False.")
             return False
+            
         p1_high = self.safe_round(p1_high)
         p1_low = self.safe_round(p1_low)
         p2_high = self.safe_round(p2_high)
         p2_low = self.safe_round(p2_low)
         logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Prior Two Period Rounded values: {period1} HIGH={p1_high}, LOW={p1_low}; {period2} HIGH={p2_high}, LOW={p2_low}")
+        
         current_period_high = self.variables.get(f"{self.product_name}_{current_period}_HIGH")
         current_period_low = self.variables.get(f"{self.product_name}_{current_period}_LOW")
         if current_period_high is None or current_period_low is None:
             logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Current period values not found. Returning False.")
             return False
-        logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Current period {current_period} HIGH={current_period_high}, LOW={current_period_low}")        
+        current_period_high = self.safe_round(current_period_high)
+        current_period_low = self.safe_round(current_period_low)
+        logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Current period {current_period} HIGH={current_period_high}, LOW={current_period_low}")
+        
         if self.direction == "long":
-            logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for LONG direction.")
             if p2_high > p1_high and p2_low > p1_low:
-                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
-                if current_period_high > p2_high and current_period_low > p2_low:
-                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
+                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Upward one time framing detected for prior periods.")
+                if current_period_low >= p2_low:
+                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current period acceptable (inside or extending upward). Returning True.")
                     return True
                 else:
-                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Is Not One Time Framing. Returning False.")
+                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current period low {current_period_low} is below prior low {p2_low}. Returning False.")
                     return False
             else:
-                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior Periods are not One-Time Framing.")
+                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior periods are not upward one time framing. Returning False.")
                 return False
+                
         elif self.direction == "short":
-            logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Evaluating conditions for SHORT direction.")
             if p2_high < p1_high and p2_low < p1_low:
-                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | One Time Framing Detected For Prior Periods.")
-                if current_period_high < p2_high and current_period_low < p2_low:
-                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Now One Time Framing. Returning True.")
+                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Downward one time framing detected for prior periods.")
+                if current_period_high <= p2_high:
+                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current period acceptable (inside or extending downward). Returning True.")
                     return True
                 else:
-                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current Period Is Not One Time Framing. Returning False.")
+                    logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Current period high {current_period_high} is above prior high {p2_high}. Returning False.")
                     return False
             else:
-                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior Periods are not One-Time Framing.")
+                logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Direction: {self.direction} | Prior periods are not downward one time framing. Returning False.")
                 return False
+                
         else:
             logger.debug(f"IBGP | one_time_framing | Product: {self.product_name} | Invalid direction specified. Returning False.")
             return False
@@ -359,7 +372,8 @@ class IBGP(Base):
                         logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: open_type() did not return 'OAIR' -> [{self.c_non_dir_open}]")
                     
                     # CRITERIA 6: Using 75% of Expected Range
-                    self.range_used = (round((max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)) / self.exp_rng),2)
+                    self.day_range_used = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
+                    self.range_used = round((self.day_range_used / self.exp_rng),2)
                     if self.range_used >= 0.75:
                         self.c_exp_rng = "x"
                         logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) >= 0.75 -> [{self.c_exp_rng}]")
@@ -403,14 +417,14 @@ class IBGP(Base):
                     
                     # CRITERIA 10: Noticeable Slope to VWAP
                     if self.direction == "short":
-                        if self.vwap_slope < -0.03:
+                        if self.vwap_slope < -0.06:
                             self.c_vwap_slope = "x"
                             logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) < -0.03 -> [{self.c_vwap_slope}]")
                         else:
                             self.c_vwap_slope = "  "
                             logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) >= -0.03 -> [{self.c_vwap_slope}]")
                     elif self.direction == "long":
-                        if self.vwap_slope > 0.03:
+                        if self.vwap_slope > 0.06:
                             self.c_vwap_slope = "x"
                             logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: vwap_slope({self.vwap_slope}) > 0.03 -> [{self.c_vwap_slope}]")
                         else:
@@ -489,7 +503,7 @@ class IBGP(Base):
         embed.set_timestamp()
 
         # Criteria Header
-        embed.add_embed_field(name="**Criteria**", value="\u200b", inline=False)
+        embed.add_embed_field(name="**Criteria**", value="", inline=False)
 
         # Criteria Details
         criteria = (
@@ -504,14 +518,14 @@ class IBGP(Base):
             f"- **[{self.c_ib_ext_half}]** Have Not Hit 1.5x {settings['destination']}\n"
             f"- **[{self.c_euro_ib}]** {settings['mid']} Euro {settings['destination']}\n"
         )
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
+        embed.add_embed_field(name="", value=criteria, inline=False)
 
         # Playbook Score
         embed.add_embed_field(name="**Playbook Score**", value=f"_{self.score} / 10_", inline=False)
         
         # Alert Time and Price Context
         alert_time_text = f"**Alert Time / Price**: _{alert_time_formatted} EST | {self.cpl}_"
-        embed.add_embed_field(name="\u200b", value=alert_time_text, inline=False)
+        embed.add_embed_field(name="", value=alert_time_text, inline=False)
 
         return embed 
     

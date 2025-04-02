@@ -293,7 +293,7 @@ class DATR(Base):
             f"- **[{self.c_vwap}]** {settings['c_vwap']} ETH VWAP\n"
             f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
         )
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
+        embed.add_embed_field(name="", value=criteria, inline=False)
         embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 6", inline=False)
         alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
         embed.add_embed_field(name="", value=alert_time_text, inline=False)

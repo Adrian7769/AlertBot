@@ -316,10 +316,8 @@ class TREV(Base):
             f"- **[{self.c_ab_vwap}]** {settings['vwap']} ETH VWAP \n"
             f"- **[{self.c_within_ibatr}]** Prior Vpoc Within ATR of IB \n"
         )
-        embed.add_embed_field(name="\u200b", value=criteria, inline=False)
-
+        embed.add_embed_field(name="", value=criteria, inline=False)
         embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 5", inline=False)
-        
         alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
         embed.add_embed_field(name="", value=alert_time_text, inline=False)
         return embed
