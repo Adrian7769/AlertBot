@@ -79,11 +79,11 @@ class DOGW(Base):
             "top_0": self.a_high,
             "top_5": self.a_high - 0.05 * a_range,
             "top_15": self.a_high - 0.15 * a_range,
-            "top_25": self.a_high - 0.25 * a_range,
+            "top_30": self.a_high - 0.30 * a_range,
             "bottom_0": self.a_low,
             "bottom_5": self.a_low + 0.05 * a_range,
             "bottom_15": self.a_low + 0.15 * a_range,
-            "bottom_25": self.a_low + 0.25 * a_range,
+            "bottom_30": self.a_low + 0.30 * a_range,
         }
 
     def open_type_algorithm(self):
@@ -113,14 +113,13 @@ class DOGW(Base):
                 return "OD v"
             elif self.day_open == self.a_low:
                 return "OD ^"
-            elif thresholds["top_5"] < self.day_open < thresholds["top_0"]:
+            elif thresholds["top_15"] <= self.day_open < thresholds["top_0"]:
                 return "OTD v"
-            elif thresholds["bottom_0"] < self.day_open < thresholds["bottom_5"]:
+            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_15"]:
                 return "OTD ^"
             else:
                 return "Wait"
 
-        # Evaluate conditions when B period is active
         else:
             logger.debug(f"Evaluating B period conditions with day_open={self.day_open}")
             if self.b_high == 0 and self.b_low == 0:
@@ -129,21 +128,17 @@ class DOGW(Base):
                 return "OD v"
             elif self.day_open == self.a_low:
                 return "OD ^"
-            elif thresholds["top_5"] < self.day_open < thresholds["top_0"]:
+            elif thresholds["top_15"] <= self.day_open < thresholds["top_0"]:
                 return "OTD v"
-            elif thresholds["bottom_0"] < self.day_open < thresholds["bottom_5"]:
+            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_15"]:
                 return "OTD ^"
-            elif thresholds["top_15"] < self.day_open <= thresholds["top_5"] and self.b_high < thresholds["a_mid"]:
+            elif thresholds["top_30"] <= self.day_open < thresholds["top_0"] and self.b_high <= thresholds["a_mid"]:
                 return "OTD v"
-            elif thresholds["bottom_5"] < self.day_open <= thresholds["bottom_15"] and self.b_low > thresholds["a_mid"]:
+            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_30"] and self.b_low >= thresholds["a_mid"]:
                 return "OTD ^"
-            elif thresholds["top_25"] < self.day_open <= thresholds["top_15"] and self.b_high < thresholds["bottom_25"]:
-                return "OTD v"
-            elif thresholds["bottom_15"] <= self.day_open < thresholds["bottom_25"] and self.b_low > thresholds["top_25"]:
-                return "OTD ^"
-            elif self.day_open > thresholds["top_25"] and self.b_low > thresholds["a_mid"]:
+            elif self.day_open >= thresholds["top_30"] and self.b_low >= thresholds["a_mid"]:
                 return "ORR ^"
-            elif self.day_open < thresholds["bottom_25"] and self.b_high < thresholds["a_mid"]:
+            elif self.day_open <= thresholds["bottom_30"] and self.b_high <= thresholds["a_mid"]:
                 return "ORR v"
             else:
                 if overlap_pct >= 0.25:
@@ -155,8 +150,6 @@ class DOGW(Base):
                         return "OAOR v"
                     else:
                         return "OAIR"
-
-        
     def exp_range(self):
 
         if not self.prior_close:
