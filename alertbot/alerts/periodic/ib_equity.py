@@ -200,7 +200,6 @@ class IB_Equity_Alert(Base):
             else:
                 vwap_type = "Weak"
             
-            # Build the Discord Embed
             try:
                 embed_title = f"{color_name} **{local_product} - Context - IB Check-In** :loudspeaker:"
                 embed = DiscordEmbed(

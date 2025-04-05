@@ -1,5 +1,6 @@
 .venv/
 .env
+archive/
 alertbot/utils/credentials.json
 __pycache__/
 *.pyc

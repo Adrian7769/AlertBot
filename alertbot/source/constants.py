@@ -3,11 +3,8 @@ from datetime import time as datetime_time
 from alertbot.alerts.conditional.playbook.pvat import PVAT
 from alertbot.alerts.conditional.playbook.datr import DATR
 from alertbot.alerts.conditional.playbook.dogw import DOGW
-from alertbot.alerts.conditional.playbook.bsnd import BSND # GG
-from alertbot.alerts.conditional.playbook.hvnr import HVNR # GG
 from alertbot.alerts.conditional.playbook.Ibgp import IBGP 
 from alertbot.alerts.conditional.playbook.Ibgw import IBGW
-from alertbot.alerts.conditional.playbook.strc import STRC # Final boss
 from alertbot.alerts.conditional.playbook.trct import TRCT
 from alertbot.alerts.conditional.playbook.trev import TREV
 from alertbot.alerts.conditional.playbook.xtfd import XTFD

@@ -15,10 +15,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import os
 
-#                Necessary Improvements for 3/26/25
+#                Necessary Additions by 4/07/25
 # ------------------------------------------------------------ #
 # Optimization!
-# Finish the Playbook This Week and Optimization
+# HVNR
+# STRC
+# BSND
 # ------------------------------------------------------------ #
 
 def main():
