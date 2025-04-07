@@ -489,7 +489,7 @@ class IBGP(Base):
                 inline_text = f"Noticeable Slope to dVWAP \n"
 
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **PVAT** {settings['emoji_indicator']}"
+        title = f"**{self.product_name} - Playbook Alert** - **IBGP** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,

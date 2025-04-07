@@ -870,10 +870,10 @@ class TRCT(Base):
             self.direction = "long"
             logger.debug(f" TRCT | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> long")
         elif self.day_high > self.ib_high and self.day_low < self.ib_low:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
+            logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
             return
         else:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning")
+            logger.debug(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning")
             return
 
         self.color = "red" if self.direction == "short" else "green"
