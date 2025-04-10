@@ -9,6 +9,8 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Adjust VWAP Strong Weak Values 
+
 class IB_Equity_Alert(Base):
     def __init__(self, files):
         super().__init__(files=files)
@@ -195,7 +197,7 @@ class IB_Equity_Alert(Base):
                 a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low
                 )
             
-            if vwap_slope >= 0.08 or vwap_slope <= -0.08:
+            if vwap_slope >= 0.1 or vwap_slope <= -0.1:
                 vwap_type = "Strong"
             else:
                 vwap_type = "Weak"

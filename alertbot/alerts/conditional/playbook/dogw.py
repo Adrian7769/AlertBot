@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 last_alerts = {}
 last_alerts_lock = threading.Lock()
 
+# Disable WITHIN ATR AS CRITICAL CRITERIA AND ADJUST THRESHOLD VALUES FOR OPEN TYPE ALGORITHM
+# ADD ABOVE / BELOW ETH VWAP
 class DOGW(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
@@ -28,9 +30,9 @@ class DOGW(Base):
         
         # Conditionally round B period data only if the current time is at or past the B period start
         if self.product_name == 'CL':
-            b_period_start_time = time(9, 30)
+            b_period_start_time = time(9, 30, 5)
         else:
-            b_period_start_time = time(10, 0)
+            b_period_start_time = time(10, 0, 5)
         current_time = datetime.now(self.est).time()
         if current_time >= b_period_start_time:
             self.b_high = self.safe_round(variables.get(f'{product_name}_B_HIGH'))
@@ -50,7 +52,8 @@ class DOGW(Base):
         self.day_low = self.safe_round(variables.get(f'{product_name}_DAY_LOW'))        
         self.vwap_slope = variables.get(f'{product_name}_VWAP_SLOPE')
         self.overnight_high = self.safe_round(variables.get(f'{product_name}_OVNH'))
-        self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL'))    
+        self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL')) 
+        self.eth_vwap = self.variables.get(f'{self.product_name}_ETH_VWAP')  
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
@@ -109,32 +112,31 @@ class DOGW(Base):
         # Evaluate conditions when B period is not active (using only A period data)
         if not b_active:
             logger.debug(f"Evaluating A period conditions with day_open={self.day_open}")
-            if self.day_open == self.a_high:
+            if thresholds["top_5"] <= self.day_open <= thresholds["top_0"]:
                 return "OD v"
-            elif self.day_open == self.a_low:
+            elif thresholds["bottom_0"] <= self.day_open <= thresholds["bottom_5"]:
                 return "OD ^"
-            elif thresholds["top_15"] <= self.day_open < thresholds["top_0"]:
+            elif thresholds["top_15"] <= self.day_open < thresholds["top_5"]:
                 return "OTD v"
-            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_15"]:
+            elif thresholds["bottom_5"] < self.day_open <= thresholds["bottom_15"]:
                 return "OTD ^"
             else:
                 return "Wait"
-
         else:
             logger.debug(f"Evaluating B period conditions with day_open={self.day_open}")
             if self.b_high == 0 and self.b_low == 0:
                 return "Wait"
-            if self.day_open == self.a_high:
+            if thresholds["top_5"] <= self.day_open <= thresholds["top_0"]:
                 return "OD v"
-            elif self.day_open == self.a_low:
+            elif thresholds["bottom_0"] <= self.day_open <= thresholds["bottom_5"]:
                 return "OD ^"
-            elif thresholds["top_15"] <= self.day_open < thresholds["top_0"]:
+            elif thresholds["top_15"] <= self.day_open < thresholds["top_5"]:
                 return "OTD v"
-            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_15"]:
+            elif thresholds["bottom_5"] < self.day_open <= thresholds["bottom_15"]:
                 return "OTD ^"
-            elif thresholds["top_30"] <= self.day_open < thresholds["top_0"] and self.b_high <= thresholds["a_mid"]:
+            elif thresholds["top_30"] <= self.day_open < thresholds["top_15"] and self.b_high <= thresholds["a_mid"]:
                 return "OTD v"
-            elif thresholds["bottom_0"] < self.day_open <= thresholds["bottom_30"] and self.b_low >= thresholds["a_mid"]:
+            elif thresholds["bottom_15"] < self.day_open <= thresholds["bottom_30"] and self.b_low >= thresholds["a_mid"]:
                 return "OTD ^"
             elif self.day_open >= thresholds["top_30"] and self.b_low >= thresholds["a_mid"]:
                 return "ORR ^"
@@ -190,15 +192,13 @@ class DOGW(Base):
         if self.direction == "long":
             self.target = self.ib_low + self.ib_atr
             crit1 = log_condition(self.cpl > self.orh, f"CRITICAL1: self.cpl({self.cpl}) > self.orh({self.orh})")
+            crit2 = log_condition(self.opentype in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap})")
         elif self.direction == "short":
             self.target = self.ib_high - self.ib_atr
             crit1 = log_condition(self.cpl < self.orl, f"CRITICAL1: self.cpl({self.cpl}) < self.orl({self.orl})")
-        else:
+            crit2 = log_condition(self.opentype in ["OD v", "OTD v", "ORR v", "OAOR v"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap})")
             self.target = None
-            self.atr_condition = False
-            self.or_condition = False
-
-        crit2 = log_condition(self.remaining_atr >= 0.4 * self.ib_atr, f"CRITICAL2: remaining_atr({self.remaining_atr}) >= 0.4 * ib_atr({self.ib_atr})")
+            crit1= False
 
         crit3 = log_condition(
             self.opentype in ["OD v", "OD ^", "OTD v", "OTD ^", "ORR ^", "ORR v", "OAOR ^", "OAOR v"],
@@ -248,7 +248,7 @@ class DOGW(Base):
             self.direction = "long"
             logger.debug(f"DOGW | check | Product: {self.product_name} | DIR_LOGIC: opentype({self.opentype}) indicates long")
         else:
-            logger.debug(f"DOGW | check | Product: {self.product_name} | Open type not recognized; returning False.")
+            logger.debug(f"DOGW | check | Product: {self.product_name} | Open type is WAIT; returning False.")
             return False
 
         self.color = "red" if self.direction == "short" else "green"
@@ -260,14 +260,16 @@ class DOGW(Base):
                 logger.debug(f"DOGW | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
                 if self.direction != last_alert:
                     logger.info(f"DOGW | check | Product: {self.product_name} | Note: Condition Met")
-                    
+                    self.used_atr = self.ib_high - self.ib_low
+                    self.remaining_atr = max((self.ib_atr - self.used_atr), 0)  
+                          
                     # CRITERIA 1: 40% ATR Left
-                    if self.atr_condition == True:
+                    if self.remaining_atr >= 0.4 * self.ib_atr:
                         self.c_within_atr = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition True -> [{self.c_within_atr}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: self.remaining_atr >= 0.4 * self.ib_atr -> [{self.c_within_atr}]")
                     else:
                         self.c_within_atr = "  "
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: atr_condition False -> [{self.c_within_atr}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: self.remaining_atr >= 0.4 * self.ib_atr -> [{self.c_within_atr}]")
                     
                     # CRITERIA 2: 50% of ETH Expected Range Left
                     self.day_range_used = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
@@ -378,7 +380,7 @@ class DOGW(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: {self.target} (Avg Range IB)\n"
+                f"**Destination**: {round(self.target,2)} (Avg Range IB)\n"
                 f"**Risk**: Wrong if price accepts {settings['risk']} HWB of A period or {settings['risk']} ETH VWAP\n"
                 f"**Driving Input**: Auction is presenting a directional open type\n"
             ),

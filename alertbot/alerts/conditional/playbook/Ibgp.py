@@ -41,6 +41,7 @@ class IBGP(Base):
         self.overnight_high = self.safe_round(variables.get(f'{product_name}_OVNH'))
         self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL'))          
         self.day_vpoc = self.safe_round(variables.get(f'{product_name}_DAY_VPOC'))                 
+        
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
