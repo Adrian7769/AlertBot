@@ -126,18 +126,15 @@ class DATR(Base):
         prior_mid = (self.prior_high + self.prior_low) / 2
         logic = False
         crit2 = False
-        crit3 = False
         crit1 = log_condition((self.prior_high - tolerance) > self.day_open > (self.prior_low + tolerance), f"CRITICAL1: (self.prior_high({self.prior_high}) - tolerance({tolerance})) > self.day_open({self.day_open}) > (self.prior_low({self.prior_low}) + tolerance({tolerance}))")
         if crit1:
             if self.direction == 'Higher':
                 crit2 = log_condition(self.cpl > prior_mid, f"CRITICAL2: self.cpl({self.cpl}) > prior_mid({self.prior_mid})")
-                crit3 = log_condition(self.prior_vpoc > ((self.prior_high + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) > ((prior_high({self.prior_high}) + prior_low({self.prior_low})) / 2)")
-                logic = crit2 and crit3
+                logic = crit2
             elif self.direction == 'Lower':
                 crit2 = log_condition(self.cpl < prior_mid, f"CRITICAL2: self.cpl({self.cpl}) < prior_mid({self.prior_mid})")
-                crit3 = log_condition(self.prior_vpoc < ((self.prior_low + prior_mid) / 2), f"CRITICAL3: self.prior_vpoc({self.prior_vpoc}) < ((prior_low({self.prior_low}) + prior_high({self.prior_high})) / 2)")
-                logic = crit2 and crit3
-        logger.debug(f"DATR | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3}")
+                logic = crit2
+        logger.debug(f"DATR | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | CRITICAL1: {crit1} | CRITICAL2: {crit2}")
         return logic
 # ---------------------------------- Opportunity Window ------------------------------------ #   
     def time_window(self):
