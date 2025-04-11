@@ -541,12 +541,12 @@ class IBGW(Base):
                 colon = ""
         if self.direction == "long":
             if self.vwap_slope > 0.06:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         elif self.direction == "short":
             if self.vwap_slope < -0.06:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         # Title Construction with Emojis

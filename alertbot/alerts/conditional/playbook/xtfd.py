@@ -614,7 +614,6 @@ class XTFD(Base):
             f"- **[{self.c_ib_ext_stat}]** 1.5x {settings['destination']} Stat Complete \n"
             f"- **[{self.c_touch_vwap}]** Touched VWAP After {settings['destination']} Extension.\n"
             f"- **[{self.c_osd}]** Within 1 Standard Deviation of VWAP \n"
-            f"- **[{self.c_directional}]** Prior Session was Directional \n"
         )
         embed.add_embed_field(name="", value=criteria, inline=False)
 
