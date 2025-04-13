@@ -540,13 +540,13 @@ class IBGW(Base):
                 ot = ""            
                 colon = ""
         if self.direction == "long":
-            if self.vwap_slope > 0.05:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+            if self.vwap_slope > 0.06:
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         elif self.direction == "short":
-            if self.vwap_slope < -0.05:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+            if self.vwap_slope < -0.06:
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         # Title Construction with Emojis
@@ -555,7 +555,7 @@ class IBGW(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"**Destination**: {self.destination} ({settings['destination']} 1.5x) \n"
+                f"**Destination**: {round(self.destination,2)} ({settings['destination']} 1.5x) \n"
                 f"**Risk**: Price Quickly Rejects IB Range Extension \n"
                 f"**Driving Input**: This trade seeks entry on the breach of the Initial Balance toward a pre-defined target \n"
             ),

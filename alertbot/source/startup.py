@@ -76,23 +76,23 @@ class Initialization(Base):
         preps = {
             'ES': {
                 'drive_folder_id': '1FjvgLwW4I7lLZmv33IeDcsL1X2urOOSy', 
-                'icon': '🔵',
+                'icon': ':blue_square:',
             },
             'NQ': {
                 'drive_folder_id': '10RPtoqSu5okb2g8628avMFj6dNhJztEi', 
-                'icon': '🟢',
+                'icon': ':green_square:',
             },
             'RTY': {
                 'drive_folder_id': '1PHlBBlnawCpkzEAr_L3Rg5m4wFnpEeyJ', 
-                'icon': '🟠',
+                'icon': ':orange_square:',
             },
             'CL': {
                 'drive_folder_id': '164e7-8yvec_EoAdG0T4Px36xL2sFxAcz', 
-                'icon': '🟣',
+                'icon': ':purple_square:',
             },
             'QuickSheet': {
                 'drive_folder_id': '1_3bDtMevegvk9M8W2LPXq8_vT1v2wom5', 
-                'icon': '🔴',
+                'icon': ':red_square:',
             }            
         }
         try:
@@ -105,6 +105,7 @@ class Initialization(Base):
         except Exception as e:
             logger.error(f"Startup | publish_prep | Failed to initialize Google Drive API client: {e}")
             return
+
         for product, config in preps.items():
             drive_folder_id = config['drive_folder_id']
             icon = config['icon']
@@ -128,15 +129,13 @@ class Initialization(Base):
                 file = files[0]
                 file_id = file['id']
                 web_view_link = file.get('webViewLink')
-                logger.debug(f"Startup | publish_prep | Retrived webViewLink for {filename}: {web_view_link}.")
+                logger.debug(f"Startup | publish_prep | Retrieved webViewLink for {filename}: {web_view_link}.")
             except HttpError as e:
                 logger.error(f"Startup | publish_prep | Failed to retrieve webViewLink for {filename}: {e}")
                 continue
+
             try:
-                permission = {
-                    'type': 'anyone',
-                    'role': 'reader'    
-                }
+                permission = {'type': 'anyone', 'role': 'reader'}
                 drive_service.permissions().create(
                     fileId=file_id,
                     body=permission,
@@ -145,8 +144,8 @@ class Initialization(Base):
                 logger.debug(f"Startup | publish_prep | Set permissions for {filename} to 'anyone with the link can view'.")
             except HttpError as e:
                 logger.error(f"Startup | publish_prep | Failed to create permission for {filename}: {e}")
+
             try:
-                # Retrieve the updated webViewLink after setting permissions
                 file = drive_service.files().get(
                     fileId=file_id,
                     fields='webViewLink'
@@ -156,14 +155,14 @@ class Initialization(Base):
             except HttpError as e:
                 logger.error(f"Startup | publish_prep | Failed to retrieve webViewLink for {filename}: {e}")
                 continue
+
             try:
-                embed_title = f"{product} Prep For **{date_str}**"
+                embed_title = f"{icon} {product} Prep For **{date_str}**"
                 embed = DiscordEmbed(
                     title=embed_title,
-                    color=self.product_color.get(product, 0x000000)
+                    color=self.get_color(product)
                 )
                 embed.set_timestamp()
-                # Add a field with the link to view the PDF
                 if web_view_link:
                     embed.add_embed_field(
                         name="📄 Auction Prep PDF",
@@ -186,6 +185,7 @@ class Initialization(Base):
             except Exception as e:
                 logger.error(f"Startup | publish_prep | Failed to create or send Discord embed for {product}: {e}")
                 continue
+
         logger.info("Startup | publish_prep | Completed publish_prep function.")
     def prep_data(files):
         def safe_read_csv(filepath, **kwargs):

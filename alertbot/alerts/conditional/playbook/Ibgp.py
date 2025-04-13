@@ -41,6 +41,7 @@ class IBGP(Base):
         self.overnight_high = self.safe_round(variables.get(f'{product_name}_OVNH'))
         self.overnight_low = self.safe_round(variables.get(f'{product_name}_OVNL'))          
         self.day_vpoc = self.safe_round(variables.get(f'{product_name}_DAY_VPOC'))                 
+        
         self.es_impvol = config.es_impvol
         self.nq_impvol = config.nq_impvol
         self.rty_impvol = config.rty_impvol
@@ -479,17 +480,17 @@ class IBGP(Base):
             colon = ""      
         if self.direction == "long":
             if self.vwap_slope > 0.03:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
         elif self.direction == "short":
             if self.vwap_slope < -0.03:
-                inline_text = f"Noticeable Slope to dVWAP: ({self.vwap_slope*100})\n"
+                inline_text = f"Noticeable Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Noticeable Slope to dVWAP \n"
 
         # Title Construction with Emojis
-        title = f"**{self.product_name} - Playbook Alert** - **PVAT** {settings['emoji_indicator']}"
+        title = f"**{self.product_name} - Playbook Alert** - **IBGP** {settings['emoji_indicator']}"
     
         embed = DiscordEmbed(
             title=title,

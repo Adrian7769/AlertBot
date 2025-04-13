@@ -870,10 +870,10 @@ class TRCT(Base):
             self.direction = "long"
             logger.debug(f" TRCT | check | Product: {self.product_name} | DIR_LOGIC: self.day_high({self.day_high}) > self.ib_high({self.ib_high}) -> long")
         elif self.day_high > self.ib_high and self.day_low < self.ib_low:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
+            logger.debug(f" TRCT | check | Product: {self.product_name} | Note: Neutral Behavior Detected, Returning")
             return
         else:
-            logger.info(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning")
+            logger.debug(f" TRCT | check | Product: {self.product_name} | Note: No IB Extension Detected, Returning")
             return
 
         self.color = "red" if self.direction == "short" else "green"
@@ -920,14 +920,14 @@ class TRCT(Base):
                     
                     # Logic For VWAP Strength
                     if self.direction == "short":
-                        if self.vwap_slope < -0.6:
+                        if self.vwap_slope < -0.8:
                             self.c_strong_vwap = "x"
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) < -0.05 -> [{self.c_strong_vwap}]")
                         else:
                             self.c_strong_vwap = "  "
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) >= -0.05 -> [{self.c_strong_vwap}]")
                     elif self.direction == "long":
-                        if self.vwap_slope > 0.06:
+                        if self.vwap_slope > 0.08:
                             self.c_strong_vwap = "x"
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) > 0.05 -> [{self.c_strong_vwap}]")
                         else:

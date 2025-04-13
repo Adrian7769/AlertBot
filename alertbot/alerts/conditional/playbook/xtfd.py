@@ -610,11 +610,10 @@ class XTFD(Base):
             f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({round((self.ib_vatr*100), 2)}%) \n"
             f"- **[{self.c_no_skew}]** No Skew to Profile toward {settings['destination']} Extreme \n"
             f"- **[{self.c_directional}]** Prior Session was Directional \n"
-            f"- **[{self.c_vwap_slope}]** No Slope to VWAP: ({self.vwap_slope*100}°) \n"
+            f"- **[{self.c_vwap_slope}]** No Slope to VWAP: ({round((self.vwap_slope*100),2)}°) \n"
             f"- **[{self.c_ib_ext_stat}]** 1.5x {settings['destination']} Stat Complete \n"
             f"- **[{self.c_touch_vwap}]** Touched VWAP After {settings['destination']} Extension.\n"
             f"- **[{self.c_osd}]** Within 1 Standard Deviation of VWAP \n"
-            f"- **[{self.c_directional}]** Prior Session was Directional \n"
         )
         embed.add_embed_field(name="", value=criteria, inline=False)
 

@@ -9,6 +9,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Adjust VWAP Strong Weak Values 
 class IB_Crude_Alert(Base):
     def __init__(self, files):
         super().__init__(files=files)
@@ -194,7 +195,7 @@ class IB_Crude_Alert(Base):
                 a_high, a_low, b_high, b_low, day_open, orh, orl, prior_high, prior_low, day_high, day_low
                 )
             
-            if vwap_slope >= 0.08 or vwap_slope <= -0.08:
+            if vwap_slope >= 0.1 or vwap_slope <= -0.1:
                 vwap_type = "Strong"
             else:
                 vwap_type = "Weak"
@@ -206,7 +207,7 @@ class IB_Crude_Alert(Base):
                     description=(
                         f"**Open Type**: {open_type} \n"
                         f"**{ib_type}**: {ib_range}p | {round(ib_vatr, 2)}% of Avg\n"
-                        f"**Vwap {vwap_type}**: {vwap_slope*100}° \n"
+                        f"**Vwap {vwap_type}**: {round((vwap_slope*100),2)}° \n"
                     ),
                     color=color_value
                 )
@@ -222,7 +223,7 @@ class IB_Crude_Alert(Base):
                 embed.add_embed_field(name=":balance_scale: Current Posture", value=f"{posture}", inline=False)
 
                 embed.add_embed_field(name=":bar_chart: Expected Range", value=(
-                    f"**Rng Used**: {exhausted} | {range_used}% Used \n"
+                    f"**Rng Used**: {exhausted} | {round(range_used,2)}% Used \n"
                     f"**Range Left Up**: {range_up}{'' if range_up == 'Exhausted' else '%'} \n"
                     f"**Range Left Down**: {range_down}{'' if range_down == 'Exhausted' else '%'} "
                 ), inline=False)
