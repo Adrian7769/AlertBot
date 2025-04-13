@@ -12,6 +12,43 @@ from alertbot.alerts.conditional.playbook.xtfd import XTFD
 from alertbot.alerts.conditional.contextual.neutral import NEUTRAL
 from alertbot.alerts.conditional.contextual.pre_ib import PRE_IB_BIAS
 
+# Investpy Current Timezones
+TIMEZONES = {
+    'GMT -11:00': [2, 35],
+    'GMT -10:00': [3],
+    'GMT -9:00': [],  # No entry in HTML
+    'GMT -8:00': [4],
+    'GMT -7:00': [5, 36, 37],
+    'GMT -6:00': [6, 38, 40],
+    'GMT -5:00': [7, 39, 41, 42],
+    'GMT -4:00': [8, 9, 43, 44, 45, 46, 47],
+    'GMT -3:30': [11],
+    'GMT -3:00': [10, 12, 48, 49, 51],
+    'GMT -2:00': [50],
+    'GMT -1:00': [53],
+    'GMT': [14, 55, 56],
+    'GMT +1:00': [15, 54, 60, 166],
+    'GMT +2:00': [16, 57, 58, 59, 61, 65],
+    'GMT +02:00': [67],
+    'GMT +3:00': [17, 18, 62, 63, 64, 66, 68, 70, 71, 72],
+    'GMT +3:30': [19],
+    'GMT +4:00': [20, 73],
+    'GMT +4:30': [21],
+    'GMT +5:00': [1, 22, 77],
+    'GMT +5:30': [23, 79],
+    'GMT +5:45': [24],
+    'GMT +6:00': [25],
+    'GMT +6:30': [26],
+    'GMT +7:00': [27],
+    'GMT +8:00': [28, 113],
+    'GMT +08:00': [178],
+    'GMT +9:00': [29, 88],
+    'GMT +9:30': [30],
+    'GMT +10:00': [31, 91, 94],
+    'GMT +11:00': [32],
+    'GMT +12:00': [33],
+}
+
 external_impvol = [
     {"sheet_name": "ES_Data", "sheet_id": "1miVoDpHI40Nff7PZB5QVKAGaB-QaGEJzijo8uf2wtCU", "row_number": 3, "col_number": 132},
     {"sheet_name": "NQ_Data", "sheet_id": "1sypXFWOHl5-wBihCBSLDMv0Z-wYUoU-QoUXXfKfqB7Y", "row_number": 4, "col_number": 132},
