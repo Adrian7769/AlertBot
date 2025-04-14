@@ -8,6 +8,10 @@ es_bias = None
 nq_bias = None
 rty_bias = None
 cl_bias = None
+es_swing_bias = None
+nq_swing_bias = None
+rty_swing_bias = None
+cl_swing_bias = None
 
 def set_impvol(es, nq, rty, cl):
     global es_impvol, nq_impvol, rty_impvol, cl_impvol
@@ -22,3 +26,10 @@ def set_bias(es, nq, rty, cl):
     nq_bias = nq
     rty_bias = rty
     cl_bias = cl
+    
+def set_swing_bias(es, nq, rty, cl):
+    global es_swing_bias, nq_swing_bias, rty_swing_bias, cl_swing_bias
+    es_swing_bias = es
+    nq_swing_bias = nq
+    rty_swing_bias = rty
+    cl_swing_bias = cl    

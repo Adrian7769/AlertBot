@@ -72,121 +72,28 @@ class Initialization(Base):
         logger.debug(f" Startup | grab_bias | ES_Bias: {es_bias} | NQ_Bias: {nq_bias} | RTY_Bias: {rty_bias} | CL_Bias: {cl_bias}")
         return es_bias, nq_bias, rty_bias, cl_bias
     
-    def publish_prep(self):
-        preps = {
-            'ES': {
-                'drive_folder_id': '1FjvgLwW4I7lLZmv33IeDcsL1X2urOOSy', 
-                'icon': ':blue_square:',
-            },
-            'NQ': {
-                'drive_folder_id': '10RPtoqSu5okb2g8628avMFj6dNhJztEi', 
-                'icon': ':green_square:',
-            },
-            'RTY': {
-                'drive_folder_id': '1PHlBBlnawCpkzEAr_L3Rg5m4wFnpEeyJ', 
-                'icon': ':orange_square:',
-            },
-            'CL': {
-                'drive_folder_id': '164e7-8yvec_EoAdG0T4Px36xL2sFxAcz', 
-                'icon': ':purple_square:',
-            },
-            'QuickSheet': {
-                'drive_folder_id': '1_3bDtMevegvk9M8W2LPXq8_vT1v2wom5', 
-                'icon': ':red_square:',
-            }            
-        }
-        try:
-            creds = Credentials.from_service_account_file(
-                r"alertbot\utils\credentials.json",
-                scopes=['https://www.googleapis.com/auth/drive']
-            )
-            drive_service = build('drive', 'v3', credentials=creds)
-            logger.debug("Startup | publish_prep | Google Drive API client initialized.")
-        except Exception as e:
-            logger.error(f"Startup | publish_prep | Failed to initialize Google Drive API client: {e}")
-            return
-
-        for product, config in preps.items():
-            drive_folder_id = config['drive_folder_id']
-            icon = config['icon']
-            now = datetime.now()
-            date_str = f"{now.month}-{now.day}-{now.year}"
-            filename = f"{product}_PREP_{date_str}.pdf"
-            logger.debug(f"Startup | publish_prep | Processing {product} prep.")
-            logger.debug(f"Startup | publish_prep | Expected filename: {filename}")
-            query = f"name='{filename}' and '{drive_folder_id}' in parents and trashed=false"
-            try:
-                results = drive_service.files().list(
-                    q=query,
-                    spaces='drive',
-                    fields='files(id, name, webViewLink)',
-                    pageSize=1
-                ).execute()
-                files = results.get('files', [])
-                if not files:
-                    logger.error(f"Startup | publish_prep | File {filename} not found in Drive folder {drive_folder_id}.")
-                    continue
-                file = files[0]
-                file_id = file['id']
-                web_view_link = file.get('webViewLink')
-                logger.debug(f"Startup | publish_prep | Retrieved webViewLink for {filename}: {web_view_link}.")
-            except HttpError as e:
-                logger.error(f"Startup | publish_prep | Failed to retrieve webViewLink for {filename}: {e}")
-                continue
-
-            try:
-                permission = {'type': 'anyone', 'role': 'reader'}
-                drive_service.permissions().create(
-                    fileId=file_id,
-                    body=permission,
-                    fields='id'
-                ).execute()
-                logger.debug(f"Startup | publish_prep | Set permissions for {filename} to 'anyone with the link can view'.")
-            except HttpError as e:
-                logger.error(f"Startup | publish_prep | Failed to create permission for {filename}: {e}")
-
-            try:
-                file = drive_service.files().get(
-                    fileId=file_id,
-                    fields='webViewLink'
-                ).execute()
-                web_view_link = file.get('webViewLink')
-                logger.debug(f"Startup | publish_prep | Retrieved webViewLink for {filename}: {web_view_link}")
-            except HttpError as e:
-                logger.error(f"Startup | publish_prep | Failed to retrieve webViewLink for {filename}: {e}")
-                continue
-
-            try:
-                embed_title = f"{icon} {product} Prep For **{date_str}**"
-                embed = DiscordEmbed(
-                    title=embed_title,
-                    color=self.get_color(product)
-                )
-                embed.set_timestamp()
-                if web_view_link:
-                    embed.add_embed_field(
-                        name="📄 Auction Prep PDF",
-                        value=f"View Prep [Here]({web_view_link})",
-                        inline=False
-                    )
-                else:
-                    logger.warning(f"Startup | publish_prep | No webViewLink available for {filename}.")
-                webhook_url = self.discord_webhooks_preps.get(product)
-                if not webhook_url:
-                    logger.error(f"Startup | publish_prep | No Discord webhook URL configured for product '{product}'.")
-                    continue
-                self.send_discord_embed(
-                    webhook_url=webhook_url,
-                    embed=embed,
-                    username=None, 
-                    avatar_url=None 
-                )
-                logger.info(f"Startup | publish_prep | Sent Discord embed with link for {filename} to webhook for {product}.")
-            except Exception as e:
-                logger.error(f"Startup | publish_prep | Failed to create or send Discord embed for {product}: {e}")
-                continue
-
-        logger.info("Startup | publish_prep | Completed publish_prep function.")
+    def grab_swing_bias(self, external_swing_bias):
+        output_swing_bias = {}
+        for task in external_swing_bias:
+            workbook = client.open_by_key(task["sheet_id"])
+            sheet = workbook.worksheet(task["sheet_name"])
+            cell_value = sheet.cell(task["row_number"], task["col_number"]).value
+            logger.debug(f" Startup | grab_swing_bias | Sheet: {task['sheet_name']} | Row: {task['row_number']}  | Column: {task['col_number']}")
+            if "ES" in task["sheet_name"]:
+                output_swing_bias['es_swing_bias'] = cell_value
+            elif "NQ" in task["sheet_name"]:
+                output_swing_bias['nq_swing_bias'] = cell_value
+            elif "RTY" in task["sheet_name"]:
+                output_swing_bias['rty_swing_bias'] = cell_value
+            elif "CL" in task["sheet_name"]:
+                output_swing_bias['cl_swing_bias'] = cell_value
+        es_swing_bias = output_swing_bias['es_swing_bias']
+        nq_swing_bias = output_swing_bias['nq_swing_bias']
+        rty_swing_bias = output_swing_bias['rty_swing_bias']
+        cl_swing_bias = output_swing_bias['cl_swing_bias']
+        logger.debug(f" Startup | grab_swing_bias | ES_SWING_Bias: {es_swing_bias} | NQ_SWING_Bias: {nq_swing_bias} | RTY_SWING_Bias: {rty_swing_bias} | CL_SWING_Bias: {cl_swing_bias}")
+        return es_swing_bias, nq_swing_bias, rty_swing_bias, cl_swing_bias    
+    
     def prep_data(files):
         def safe_read_csv(filepath, **kwargs):
             max_retries = 5

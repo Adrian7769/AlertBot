@@ -375,9 +375,9 @@ class IBGP(Base):
                     # CRITERIA 6: Using 75% of Expected Range
                     self.day_range_used = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
                     self.range_used = round((self.day_range_used / self.exp_rng),2)
-                    if self.range_used >= 0.75:
+                    if self.range_used < 0.75:
                         self.c_exp_rng = "x"
-                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) >= 0.75 -> [{self.c_exp_rng}]")
+                        logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) < 0.75 -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "  "
                         logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: remaining_range({self.range_used}) < 0.75 -> [{self.c_exp_rng}]")
@@ -435,7 +435,7 @@ class IBGP(Base):
                     # Score Calculation Logging
                     self.score = sum(1 for condition in [
                         self.c_favorable_price, self.c_rotational_current_session, self.c_euro_ib, self.c_vpoc_in_middle,
-                        self.c_ib_ext_half, self.c_wide_ib, self.c_exp_rng, self.c_non_dir_open, self.c_directional
+                        self.c_ib_ext_half, self.c_wide_ib, self.c_exp_rng, self.c_non_dir_open, self.c_directional, self.c_vwap_slope
                     ] if condition == "x")
                     logger.debug(f" IBGP | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/9")
                     
@@ -511,7 +511,7 @@ class IBGP(Base):
             f"- **[{self.c_favorable_price}]** Price is favorable to Value: At or {settings['mid-o']}\n"
             f"- **[{self.c_non_dir_open}]** Non-Directional Open{colon} {ot}\n"
             f"- **[{self.c_rotational_current_session}]** Rotational Day (Not One-Time Framing) \n"
-            f"- **[{self.c_exp_rng}]** Achieved At Least 75% of Expected Range: {round((self.range_used*100),2)} \n"
+            f"- **[{self.c_exp_rng}]** Have not achieved 75% of Expected Range: ({round((self.range_used*100),2)}%) \n"
             f"- **[{self.c_wide_ib}]** IB is Average to Wide: ({round((self.ib_vatr*100),2)}%) \n"
             f"- **[{self.c_vpoc_in_middle}]** dVPOC is in middle of IB Range \n"
             f"- **[{self.c_directional}]** Prior Session was Directional \n"

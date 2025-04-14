@@ -568,7 +568,7 @@ class IBGW(Base):
 
         # Criteria Details
         criteria = (
-            f"- **[{self.c_directional_open}]** Directional Open{colon} {ot} \n"
+            f"- **[{self.c_directional_open}]** Favorable Directional Open{colon} {ot} \n"
             f"- **[{self.c_otf}]** One-Time Framing \n"
             f"- **[{self.c_exp_rng}]** Less than 50% Expected Range Used: ({round((self.range_used*100),2)}%) \n"
             f"- **[{self.c_narrow_ib}]** IB is Narrow to Average: ({round((self.ib_vatr*100), 2)}%) \n"

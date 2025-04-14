@@ -1,7 +1,7 @@
 import logging
 import math
 import threading
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from alertbot.utils import config
 from discord_webhook import DiscordEmbed
 from alertbot.alerts.base import Base
@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 last_alerts = {}
 last_alerts_lock = threading.Lock()
 
-# Disable WITHIN ATR AS CRITICAL CRITERIA AND ADJUST THRESHOLD VALUES FOR OPEN TYPE ALGORITHM
-# ADD ABOVE / BELOW ETH VWAP
 class DOGW(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
@@ -186,19 +184,14 @@ class DOGW(Base):
             logger.debug(f"DOGW | input | Product: {self.product_name} | Direction: {self.direction} | {description} --> {condition}")
             return condition
 
-        self.used_atr = self.ib_high - self.ib_low
-        self.remaining_atr = max((self.ib_atr - self.used_atr), 0)
-
         if self.direction == "long":
             self.target = self.ib_low + self.ib_atr
             crit1 = log_condition(self.cpl > self.orh, f"CRITICAL1: self.cpl({self.cpl}) > self.orh({self.orh})")
-            crit2 = log_condition(self.opentype in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap})")
+            crit2 = log_condition(self.opentype in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) > self.eth_vwap({self.eth_vwap})")
         elif self.direction == "short":
             self.target = self.ib_high - self.ib_atr
             crit1 = log_condition(self.cpl < self.orl, f"CRITICAL1: self.cpl({self.cpl}) < self.orl({self.orl})")
-            crit2 = log_condition(self.opentype in ["OD v", "OTD v", "ORR v", "OAOR v"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap})")
-            self.target = None
-            crit1= False
+            crit2 = log_condition(self.opentype in ["OD v", "OTD v", "ORR v", "OAOR v"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD v', 'OTD v', 'ORR v', 'OAOR v'] and self.cpl({self.cpl}) < self.eth_vwap({self.eth_vwap})")
 
         crit3 = log_condition(
             self.opentype in ["OD v", "OD ^", "OTD v", "OTD ^", "ORR ^", "ORR v", "OAOR ^", "OAOR v"],
@@ -260,84 +253,112 @@ class DOGW(Base):
                 logger.debug(f"DOGW | check | Product: {self.product_name} | Current Alert: {self.direction} | Last Alert: {last_alert}")
                 if self.direction != last_alert:
                     logger.info(f"DOGW | check | Product: {self.product_name} | Note: Condition Met")
-                    self.used_atr = self.ib_high - self.ib_low
-                    self.remaining_atr = max((self.ib_atr - self.used_atr), 0)  
+                    self.used_atr = ((self.ib_high - self.ib_low) / self.ib_atr)
                           
                     # CRITERIA 1: 40% ATR Left
-                    if self.remaining_atr >= 0.4 * self.ib_atr:
+                    if self.used_atr <= 0.60:
                         self.c_within_atr = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: self.remaining_atr >= 0.4 * self.ib_atr -> [{self.c_within_atr}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1 met -> [{self.c_within_atr}]")
                     else:
                         self.c_within_atr = "  "
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1: self.remaining_atr >= 0.4 * self.ib_atr -> [{self.c_within_atr}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_1 not met -> [{self.c_within_atr}]")
                     
                     # CRITERIA 2: 50% of ETH Expected Range Left
                     self.day_range_used = max(self.overnight_high, self.day_high) - min(self.overnight_low, self.day_low)
-                    self.range_used = round((self.day_range_used / self.exp_rng),2)
+                    self.range_used = round((self.day_range_used / self.exp_rng), 2)
                     if self.range_used <= 0.5:
                         self.c_exp_rng = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition met -> [{self.c_exp_rng}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2 met -> [{self.c_exp_rng}]")
                     else:
                         self.c_exp_rng = "  "
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2: ETH expected range condition not met -> [{self.c_exp_rng}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_2 not met -> [{self.c_exp_rng}]")
                     
-                    # CRITERIA 3: VWAP Slope
-                    self.c_vwap_slope = "  "
-                    if self.direction == "short" and self.vwap_slope < -0.10:
-                        self.c_vwap_slope = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: vwap_slope({self.vwap_slope}) < -0.10 -> [{self.c_vwap_slope}]")
-                    elif self.direction == "long" and self.vwap_slope > 0.10:
-                        self.c_vwap_slope = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: vwap_slope({self.vwap_slope}) > 0.10 -> [{self.c_vwap_slope}]")
+                    # Determine if we are within the first 30 minutes of the DOGW period
+                    if self.product_name == 'CL':
+                        period_start_dt = datetime.combine(self.current_datetime.date(), self.crude_dogw_start, tzinfo=self.est)
                     else:
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: VWAP slope criteria not met -> [{self.c_vwap_slope}]")
+                        period_start_dt = datetime.combine(self.current_datetime.date(), self.equity_dogw_start, tzinfo=self.est)
+                    if self.current_datetime < period_start_dt + timedelta(minutes=30):
+                        self.in_first_30 = True
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Within first 30 minutes. Skipping VWAP slope check.")
+                        self.c_vwap_slope = "  "  # Do not mark VWAP slope
+                    else:
+                        self.in_first_30 = False
+                        # CRITERIA 3: VWAP Slope
+                        self.c_vwap_slope = "  "
+                        if self.direction == "short" and self.vwap_slope < -0.10:
+                            self.c_vwap_slope = "x"
+                            logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3 met: vwap_slope({self.vwap_slope}) < -0.10 -> [{self.c_vwap_slope}]")
+                        elif self.direction == "long" and self.vwap_slope > 0.10:
+                            self.c_vwap_slope = "x"
+                            logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3 met: vwap_slope({self.vwap_slope}) > 0.10 -> [{self.c_vwap_slope}]")
+                        else:
+                            logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3 not met -> [{self.c_vwap_slope}]")
                     
                     # CRITERIA 4: Orderflow
                     self.c_orderflow = "  "
                     if self.direction == "short" and self.delta < 0:
                         self.c_orderflow = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: delta({self.delta}) < 0 for short -> [{self.c_orderflow}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4 met: delta({self.delta}) < 0 -> [{self.c_orderflow}]")
                     elif self.direction == "long" and self.delta > 0:
                         self.c_orderflow = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: delta({self.delta}) > 0 for long -> [{self.c_orderflow}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4 met: delta({self.delta}) > 0 -> [{self.c_orderflow}]")
                     else:
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: Orderflow criteria not met -> [{self.c_orderflow}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4 not met -> [{self.c_orderflow}]")
                     
                     # CRITERIA 5: Euro IB
                     self.c_euro_ib = "  "
                     if self.direction == "short" and self.cpl < self.euro_ibl:
                         self.c_euro_ib = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: cpl({self.cpl}) < euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5 met: cpl({self.cpl}) < euro_ibl({self.euro_ibl}) -> [{self.c_euro_ib}]")
                     elif self.direction == "long" and self.cpl > self.euro_ibh:
                         self.c_euro_ib = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: cpl({self.cpl}) > euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5 met: cpl({self.cpl}) > euro_ibh({self.euro_ibh}) -> [{self.c_euro_ib}]")
                     else:
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5: Euro IB criteria not met -> [{self.c_euro_ib}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_5 not met -> [{self.c_euro_ib}]")
                     
                     # CRITERIA 6: Above / Below Opening Range
                     self.c_or = "  "
                     if self.direction == "short" and self.cpl < self.orl:
                         self.c_or = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) < orl({self.orl}) for short -> [{self.c_or}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6 met: cpl({self.cpl}) < orl({self.orl}) -> [{self.c_or}]")
                     elif self.direction == "long" and self.cpl > self.orh:
                         self.c_or = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: cpl({self.cpl}) > orh({self.orh}) for long -> [{self.c_or}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6 met: cpl({self.cpl}) > orh({self.orh}) -> [{self.c_or}]")
                     else:
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6: Opening Range criteria not met -> [{self.c_or}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6 not met -> [{self.c_or}]")
                     
                     # CRITERIA 7: RVOL
                     if self.rvol > 1.20:
                         self.c_rvol = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: rvol({self.rvol}) > 1.20 -> [{self.c_rvol}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 met: rvol({self.rvol}) > 1.20 -> [{self.c_rvol}]")
                     else:
                         self.c_rvol = "  "
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7: rvol({self.rvol}) <= 1.20 -> [{self.c_rvol}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 not met: rvol({self.rvol}) <= 1.20 -> [{self.c_rvol}]")
                     
-                    # Score Calculation Logging
-                    self.score = sum(1 for condition in [
-                        self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_vwap_slope, self.c_within_atr
-                    ] if condition == "x")
-                    logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score}/7")
+                    # CRITERIA 8: ETH VWAP
+                    self.c_eth_vwap = "  "
+                    if self.direction == "short" and self.cpl < self.eth_vwap:
+                        self.c_eth_vwap = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8 met: cpl({self.cpl}) < eth_vwap({self.eth_vwap}) -> [{self.c_eth_vwap}]")
+                    elif self.direction == "long" and self.cpl > self.eth_vwap:
+                        self.c_eth_vwap = "x"
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8 met: cpl({self.cpl}) > eth_vwap({self.eth_vwap}) -> [{self.c_eth_vwap}]")
+                    else:
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_8 not met -> [{self.c_eth_vwap}]")
+                                
+                    # Score Calculation
+                    if self.in_first_30:
+                        self.score = sum(1 for condition in [
+                            self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_within_atr, self.c_eth_vwap
+                        ] if condition == "x")
+                        max_score = 7
+                    else:
+                        self.score = sum(1 for condition in [
+                            self.c_orderflow, self.c_euro_ib, self.c_or, self.c_rvol, self.c_exp_rng, self.c_vwap_slope, self.c_within_atr, self.c_eth_vwap
+                        ] if condition == "x")
+                        max_score = 8
+                    logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | SCORE: {self.score} / {max_score}")
                     
                     try:
                         last_alerts[self.product_name] = self.direction
@@ -349,10 +370,10 @@ class DOGW(Base):
         else:
             logger.debug(f"DOGW | check | Product: {self.product_name} | Note: Condition(s) Not Met")
 
+
     # ---------------------------------- Alert Preparation------------------------------------ #  
     def discord_message(self):
-        
-        alert_time_formatted = self.current_datetime.strftime('%H:%M:%S') 
+        alert_time_formatted = self.current_datetime.strftime('%H:%M:%S')
         
         direction_settings = {
             "long": {
@@ -370,13 +391,11 @@ class DOGW(Base):
                 "emoji_indicator": "🔽",
             }
         }
-
         settings = direction_settings.get(self.direction)
         if not settings:
             raise ValueError(f"DOGW | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         
         title = f"**{self.product_name} - Playbook Alert** - **DOGW** {settings['emoji_indicator']}"
-
         embed = DiscordEmbed(
             title=title,
             description=(
@@ -387,27 +406,38 @@ class DOGW(Base):
             color=self.get_color()
         )
         embed.set_timestamp()
-        
         embed.add_embed_field(name="**Criteria**", value="", inline=False)
         
-        # Confidence
-        criteria = (
-            f"- **[{self.c_within_atr}]** 40% Of Average IB Left To Target\n"
-            f"- **[{self.c_exp_rng}]** Less Than 50% Expected Range Used: {round((self.range_used*100),2)}\n"
-            f"- **[{self.c_vwap_slope}]** Strong Slope To VWAP ({self.vwap_slope*100}°) \n"
-            f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
-            f"- **[{self.c_vwap_slope}]** Elevated RVOL ({self.rvol}%)\n"
-            f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
-            f"- **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
-        )
+        # Build criteria string; if within first 30 minutes, exclude VWAP slope criteria.
+        if getattr(self, "in_first_30", False):
+            criteria = (
+                f"- **[{self.c_within_atr}]** 40% Of Average IB Left\n"
+                f"- **[{self.c_exp_rng}]** Less Than 50% Expected Range Used: ({round((self.range_used*100),2)}%) \n"
+                f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
+                f"- **[{self.c_rvol}]** Elevated RVOL ({self.rvol}%)\n"
+                f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
+                f"- **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
+                f"- **[{self.c_eth_vwap}]** {settings['criteria']} ETH VWAP\n"
+            )
+            max_score = 7
+        else:
+            criteria = (
+                f"- **[{self.c_within_atr}]** 40% Of Average IB Left\n"
+                f"- **[{self.c_exp_rng}]** Less Than 50% Expected Range Used: ({round((self.range_used*100),2)}%) \n"
+                f"- **[{self.c_vwap_slope}]** Strong Slope To VWAP ({round((self.vwap_slope*100),2)}°) \n"
+                f"- **[{self.c_orderflow}]** Supportive Cumulative Delta ({self.delta})\n"
+                f"- **[{self.c_rvol}]** Elevated RVOL ({self.rvol}%)\n"
+                f"- **[{self.c_or}]** {settings['criteria']} 30s OR {settings['or']}\n"
+                f"- **[{self.c_euro_ib}]** {settings['criteria']} Euro {settings['euro']}\n"
+                f"- **[{self.c_eth_vwap}]** {settings['criteria']} ETH VWAP\n"
+            )
+            max_score = 8
+        
         embed.add_embed_field(name="", value=criteria, inline=False)
-
-        # Playbook Score
-        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / 7", inline=False)
+        embed.add_embed_field(name="**Playbook Score**", value=f"{self.score} / {max_score}", inline=False)
         
         alert_time_text = f"**Alert Time / Price**: {alert_time_formatted} EST | {self.cpl}"
         embed.add_embed_field(name="", value=alert_time_text, inline=False)
-
         return embed 
     
     def execute(self):

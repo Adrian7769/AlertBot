@@ -23,19 +23,11 @@ class Base:
             'RTY': os.getenv("DISCORD_CONTEXT_RTY_WEBHOOK"),
             'CL': os.getenv("DISCORD_CONTEXT_CL_WEBHOOK")
         }
-        self.discord_webhooks_preps = {
-            'ES': os.getenv("DISCORD_PREP_ES_WEBHOOK"),
-            'NQ': os.getenv("DISCORD_PREP_NQ_WEBHOOK"),
-            'RTY': os.getenv("DISCORD_PREP_RTY_WEBHOOK"),
-            'CL': os.getenv("DISCORD_PREP_CL_WEBHOOK"),
-            'QuickSheet': os.getenv("DISCORD_QUICKSHEET_WEBHOOK")
-        }
         self.product_color = {
             'ES': ":blue_square:",   
             'NQ': ":green_square:",  
             'RTY': ":orange_square:",  
             'CL': ":purple_square:",   
-            'QuickSheet': ":black_large_square",
         }
         self.product_name = product_name
         self.variables = variables
