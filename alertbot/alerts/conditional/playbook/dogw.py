@@ -187,7 +187,7 @@ class DOGW(Base):
         if self.direction == "long":
             self.target = self.ib_low + self.ib_atr
             crit1 = log_condition(self.cpl > self.orh, f"CRITICAL1: self.cpl({self.cpl}) > self.orh({self.orh})")
-            crit2 = log_condition(self.opentype in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"] and self.cpl < self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) > self.eth_vwap({self.eth_vwap})")
+            crit2 = log_condition(self.opentype in ["OD ^", "OTD ^", "ORR ^", "OAOR ^"] and self.cpl > self.eth_vwap, f"CRITICAL2: self.opentype in ['OD ^', 'OTD ^', 'ORR ^', 'OAOR ^'] and self.cpl({self.cpl}) > self.eth_vwap({self.eth_vwap})")
         elif self.direction == "short":
             self.target = self.ib_high - self.ib_atr
             crit1 = log_condition(self.cpl < self.orl, f"CRITICAL1: self.cpl({self.cpl}) < self.orl({self.orl})")
@@ -275,9 +275,9 @@ class DOGW(Base):
                     
                     # Determine if we are within the first 30 minutes of the DOGW period
                     if self.product_name == 'CL':
-                        period_start_dt = datetime.combine(self.current_datetime.date(), self.crude_dogw_start, tzinfo=self.est)
+                        period_start_dt = datetime.combine(self.current_datetime.date(), self.crude_open, tzinfo=self.est)
                     else:
-                        period_start_dt = datetime.combine(self.current_datetime.date(), self.equity_dogw_start, tzinfo=self.est)
+                        period_start_dt = datetime.combine(self.current_datetime.date(), self.equity_open, tzinfo=self.est)
                     if self.current_datetime < period_start_dt + timedelta(minutes=30):
                         self.in_first_30 = True
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Within first 30 minutes. Skipping VWAP slope check.")
@@ -329,12 +329,12 @@ class DOGW(Base):
                         logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_6 not met -> [{self.c_or}]")
                     
                     # CRITERIA 7: RVOL
-                    if self.rvol > 1.20:
+                    if self.rvol > 100:
                         self.c_rvol = "x"
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 met: rvol({self.rvol}) > 1.20 -> [{self.c_rvol}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 met: rvol({self.rvol}) > 100 -> [{self.c_rvol}]")
                     else:
                         self.c_rvol = "  "
-                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 not met: rvol({self.rvol}) <= 1.20 -> [{self.c_rvol}]")
+                        logger.debug(f"DOGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_7 not met: rvol({self.rvol}) <= 100 -> [{self.c_rvol}]")
                     
                     # CRITERIA 8: ETH VWAP
                     self.c_eth_vwap = "  "

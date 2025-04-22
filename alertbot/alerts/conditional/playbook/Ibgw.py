@@ -572,7 +572,7 @@ class IBGW(Base):
             f"- **[{self.c_otf}]** One-Time Framing \n"
             f"- **[{self.c_exp_rng}]** Less than 50% Expected Range Used: ({round((self.range_used*100),2)}%) \n"
             f"- **[{self.c_narrow_ib}]** IB is Narrow to Average: ({round((self.ib_vatr*100), 2)}%) \n"
-            f"- **[{self.c_skew}]** Skew In Profile Towards IB {settings['destination']} \n"
+            f"- **[{self.c_skew}]** Skew In Profile Towards {settings['destination']} \n"
             f"- **[{self.c_composite_ref}]** IB Broke From Composite Value Reference \n"
             f"- **[{self.c_rotational}]** Prior Session Was Balanced \n"
             f"- **[{self.c_vwap_slope}]** {inline_text}"

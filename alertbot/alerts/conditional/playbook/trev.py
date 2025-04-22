@@ -155,6 +155,10 @@ class TREV(Base):
                 self.cpl < self.eth_vwap,
                 f"CRITICAL3: cpl({self.cpl}) < eth_vwap({self.eth_vwap})"
             )
+            crit6 = log_condition(
+                self.day_open > self.prior_high,
+                f"CRITICAL6: self.day_open({self.day_open}) > self.prior_high({self.prior_high})"
+            )
         elif self.direction == "long":
             crit1 = log_condition(
                 self.prior_high < self.prior_prior_low + 0.1 * (self.prior_prior_high - self.prior_prior_low),
@@ -168,6 +172,10 @@ class TREV(Base):
                 self.cpl > self.eth_vwap,
                 f"CRITICAL3: cpl({self.cpl}) > eth_vwap({self.eth_vwap})"
             )
+            crit6 = log_condition(
+                self.day_open < self.prior_low,
+                f"CRITICAL6: self.day_open({self.day_open}) < self.prior_low({self.prior_low})"
+            )            
         crit4 = log_condition(
             self.gap_tier == "Tier_1",
             f"CRITICAL4: gap_tier({self.gap_tier}) == 'Tier_1'")
@@ -175,9 +183,9 @@ class TREV(Base):
             self.posture() in ["PRICE^5D^20D", "PRICEv5Dv20D", "PRICEv5D^20D", "PRICE^5Dv20D"],
             f"CRITICAL5: posture({self.posture()}) in ['PRICE^5D^20D', 'PRICEv5Dv20D', 'PRICEv5D^20D', 'PRICE^5Dv20D']"
         )
-        logic = crit1 and crit2 and crit3 and crit4 and crit5
+        logic = crit1 and crit2 and crit3 and crit4 and crit5 and crit6
         logger.debug(f"TREV | input | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {logic} | "
-                    f"CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4} | CRITICAL5: {crit5}")
+                    f"CRITICAL1: {crit1} | CRITICAL2: {crit2} | CRITICAL3: {crit3} | CRITICAL4: {crit4} | CRITICAL5: {crit5} | CRITICAL6: {crit6}")
         return logic
     
 # ---------------------------------- Opportunity Window ------------------------------------ #   

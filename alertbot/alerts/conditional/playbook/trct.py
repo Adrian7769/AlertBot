@@ -694,10 +694,10 @@ class TRCT(Base):
             logger.debug(f"TRCT | strong_trending | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: {final_logic} | CRITICAL1: {trending_acceptance} | CRITICAL2: {condition2} | CRITICAL3: {condition3} | CRITICAL4: {condition4} | CRITICAL5: {condition5} | CRITICAL6: {condition6}")
             
             # Make Accessible to Check Method.
-            self.trending_acceptance_s = trending_acceptance
+            self.trending_acceptance_l = trending_acceptance
             self.prior_session_rotational = condition2
-            self.session_mid_s = condition4
-            self.one_time_framing_s = condition5
+            self.session_mid_l = condition4
+            self.one_time_framing_l = condition5
             
             return final_logic
 
@@ -920,7 +920,7 @@ class TRCT(Base):
                     
                     # Logic For VWAP Strength
                     if self.direction == "short":
-                        if self.vwap_slope < -0.8:
+                        if self.vwap_slope < -0.08:
                             self.c_strong_vwap = "x"
                             logger.debug(f" TRCT | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_4: self.vwap_slope({self.vwap_slope}) < -0.05 -> [{self.c_strong_vwap}]")
                         else:
@@ -1047,12 +1047,12 @@ class TRCT(Base):
             raise ValueError(f" TRCT | discord_message | Product: {self.product_name} | Note: Invalid direction '{self.direction}'")
         if self.direction == "long":
             if self.vwap_slope > 0.05:
-                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+                inline_text = f"Strong Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Strong Slope to dVWAP \n"
         elif self.direction == "short":
             if self.vwap_slope < -0.05:
-                inline_text = f"Strong Slope to dVWAP: ({self.vwap_slope*100}°)\n"
+                inline_text = f"Strong Slope to dVWAP: ({round((self.vwap_slope*100),2)}°)\n"
             else:
                 inline_text = f"Strong Slope to dVWAP \n"        
         # Title Construction with Emojis
