@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 last_alerts = {}
 last_alerts_lock = threading.Lock()
-# Adjust Prior session was rotational to BREAK from rotational Prior session balance
+
 class IBGW(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
@@ -103,13 +103,13 @@ class IBGW(Base):
             self.prior_high >= self.prior_ibh + (self.prior_ibh - self.prior_ibl) and
             self.prior_close <= self.prior_ibh + (self.prior_ibh - self.prior_ibl)):
             day_type = "Semi-Directional"
-        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  # IB EXTENSION DOWN
-            self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 1.5x IB
-            self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # LOW IS ABOVE 2x IB
+        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and  
+            self.prior_low <= self.prior_ibl - 0.5 * (self.prior_ibh - self.prior_ibl) and 
+            self.prior_low >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): 
             day_type = "Semi-Rotational"
-        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and # IB EXTENSION DOWN
-            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and # LOW IS BELOW 2x IB
-            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): # CLOSE IS WITHIN 2x IB
+        elif (self.prior_low < self.prior_ibl and self.prior_high <= self.prior_ibh and 
+            self.prior_low <= self.prior_ibl - (self.prior_ibh - self.prior_ibl) and 
+            self.prior_close >= self.prior_ibl - (self.prior_ibh - self.prior_ibl)): 
             day_type = "Semi-Directional"
         else:
             day_type = "Other"
@@ -460,9 +460,12 @@ class IBGW(Base):
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_9: Composite reference criteria not met -> [{self.c_composite_ref}]")
                     
                     # CRITERIA 10: Prior Session Balanced (Rotational)
-                    if self.prior_day() in ["Rotational", "Semi-Rotational"]:
+                    if self.prior_day() in ["Rotational", "Semi-Rotational"] and self.cpl < self.prior_vpoc and self.day_low < self.ib_low:
                         self.c_rotational = "x"
-                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() returned Rotational or Semi-Rotational -> [{self.c_rotational}]")
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: self.prior_day() in ['Rotational', 'Semi-Rotational'] and self.cpl < self.prior_vpoc and self.day_low < self.ib_low -> [{self.c_rotational}]")
+                    elif self.prior_day() in ["Rotational", "Semi-Rotational"] and self.cpl > self.prior_vpoc and self.day_high > self.ib_high:
+                        self.c_rotational = "x"
+                        logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10:self.prior_day() in ['Rotational', 'Semi-Rotational'] and self.cpl > self.prior_vpoc and self.day_high > self.ib_high -> [{self.c_rotational}]")                    
                     else:
                         self.c_rotational = "  "
                         logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_10: prior_day() did not return Rotational or Semi-Rotational -> [{self.c_rotational}]")
@@ -574,7 +577,7 @@ class IBGW(Base):
             f"- **[{self.c_narrow_ib}]** IB is Narrow to Average: ({round((self.ib_vatr*100), 2)}%) \n"
             f"- **[{self.c_skew}]** Skew In Profile Towards {settings['destination']} \n"
             f"- **[{self.c_composite_ref}]** IB Broke From Composite Value Reference \n"
-            f"- **[{self.c_rotational}]** Prior Session Was Balanced \n"
+            f"- **[{self.c_rotational}]** IB Broke From Prior Session Balance \n"
             f"- **[{self.c_vwap_slope}]** {inline_text}"
             f"- **[{self.c_ib_ext_half}]** Have Not Hit 1.5x {settings['destination']} \n"
             f"- **[{self.c_magnet}]** Clear Magnet Ahead \n"

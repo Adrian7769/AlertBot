@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 last_alerts = {}
 last_alerts_lock = threading.Lock()
 
-# Fix No Valid Overlap Region Returning False
 class TRCT(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
@@ -406,30 +405,20 @@ class TRCT(Base):
             logger.debug(f"TRCT | trend_day | Product: {self.product_name} | Direction: {self.direction} | FINAL_LOGIC: False | No valid direction detected.")
             return False
 
-    def float_range(self, start, stop, step):
-        """
-        Yields a sequence of floating-point numbers from `start` up to `stop`
-        (inclusive), stepping by `step`. 
-        """
-        epsilon = 1e-9
-        num_steps = int(math.floor((stop - start) / step + 0.5))
-        logger.debug(f"TRCT | float_range | Product: {self.product_name} | start={start}, stop={stop}, step={step}, num_steps={num_steps}")
-        for i in range(num_steps + 1):
-            val = start + i * step
-            if val > stop + epsilon:
-                break
-            yield_val = round(val, 10)
-            yield yield_val
+    # ---------- helper: tick-perfect iterator (replaces old float_range) ----------
+    def float_range(self, start: float, stop: float, step: float):
+        if step <= 0:
+            raise ValueError("step must be positive")
+
+        mult = int(round(1 / step))          
+        start_tick = int(round(start * mult))
+        stop_tick = int(round(stop  * mult))
+
+        direction = 1 if stop_tick >= start_tick else -1
+        for t in range(start_tick, stop_tick + direction, direction):
+            yield t / mult
 
     def single_prints(self, finished_periods):
-        """
-        Returns True if there's at least one single print *within the overlapped region*
-        of the session and inside a 'middle' sub-period (not the first or last).
-
-        A single print is defined as a price that appears in exactly one 'middle'
-        sub-period's range, strictly within the 'lowest_overlapped_price' and
-        'highest_overlapped_price' boundaries.
-        """
         logger.debug(f"TRCT | single_prints | Product: {self.product_name} | Finished Periods: {finished_periods}")
         if len(finished_periods) < 3:
             logger.debug(f"TRCT | single_prints | Product: {self.product_name} | Not enough periods (need >= 3). Returning False.")
