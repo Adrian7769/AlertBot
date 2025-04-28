@@ -108,7 +108,7 @@ class Initialization(Base):
                 output_long_term_bias['rty_long_term_bias'] = cell_value
             elif "CL" in task["sheet_name"]:
                 output_long_term_bias['cl_long_term_bias'] = cell_value
-        es_long_term_bias = output_long_term_bias['es_long_Term_bias']
+        es_long_term_bias = output_long_term_bias['es_long_term_bias']
         nq_long_term_bias = output_long_term_bias['nq_long_term_bias']
         rty_long_term_bias = output_long_term_bias['rty_long_term_bias']
         cl_long_term_bias = output_long_term_bias['cl_long_term_bias']

@@ -69,10 +69,10 @@ external_swing_bias = [
     {"sheet_name": "CL_PREP", "sheet_id": "1SFfvZyBj5XvCuzx8bodqQ29yWtuIoTrPqmmCBaHGRzY", "row_number": 41, "col_number": 3}
 ]
 external_long_term_bias = [
-    {"sheet_name": "ES_PREP", "sheet_id": "1miVoDpHI40Nff7PZB5QVKAGaB-QaGEJzijo8uf2wtCU", "row_number": 41, "col_number": 3},
-    {"sheet_name": "NQ_PREP", "sheet_id": "1sypXFWOHl5-wBihCBSLDMv0Z-wYUoU-QoUXXfKfqB7Y", "row_number": 41, "col_number": 3},
-    {"sheet_name": "RTY_PREP", "sheet_id": "1G-gnb5ZYEnQdd9nJyraguPhlnLYMA09Cpz9EH-_8nkM", "row_number": 41, "col_number": 3},
-    {"sheet_name": "CL_PREP", "sheet_id": "1SFfvZyBj5XvCuzx8bodqQ29yWtuIoTrPqmmCBaHGRzY", "row_number": 41, "col_number": 3}
+    {"sheet_name": "ES_PREP", "sheet_id": "1miVoDpHI40Nff7PZB5QVKAGaB-QaGEJzijo8uf2wtCU", "row_number": 22, "col_number": 3},
+    {"sheet_name": "NQ_PREP", "sheet_id": "1sypXFWOHl5-wBihCBSLDMv0Z-wYUoU-QoUXXfKfqB7Y", "row_number": 22, "col_number": 3},
+    {"sheet_name": "RTY_PREP", "sheet_id": "1G-gnb5ZYEnQdd9nJyraguPhlnLYMA09Cpz9EH-_8nkM", "row_number": 22, "col_number": 3},
+    {"sheet_name": "CL_PREP", "sheet_id": "1SFfvZyBj5XvCuzx8bodqQ29yWtuIoTrPqmmCBaHGRzY", "row_number": 22, "col_number": 3}
 ]
 conditions = [
     {
@@ -148,25 +148,25 @@ conditions = [
         "end_time": datetime_time(14, 30),
     },   
     {
-        "name": "LONG_TERM_ES",
+        "name": "LONGTERM_ES",
         "required_files": ["ES_2"],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(16, 0),
     },
     {
-        "name": "LONG_TERM_NQ",
+        "name": "LONGTERM_NQ",
         "required_files": ["NQ_2"],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(16, 0),
     },
     {
-        "name": "LONG_TERM_RTY",
+        "name": "LONGTERM_RTY",
         "required_files": ["RTY_2"],
         "start_time": datetime_time(9, 30),
         "end_time": datetime_time(16, 0),
     },
     {
-        "name": "LONG_TERM_CL",
+        "name": "LONGTERM_CL",
         "required_files": ["CL_2"],
         "start_time": datetime_time(9, 0), 
         "end_time": datetime_time(14, 30),
@@ -389,7 +389,7 @@ condition_functions = {
     "DATR": DATR,
     "PREIB": PRE_IB_BIAS,
     "SWING": SWING_BIAS,
-    "LONG_TERM": LONG_TERM_BIAS,
+    "LONGTERM": LONG_TERM_BIAS,
     "NEUTRAL": NEUTRAL,
     "DOGW": DOGW,
     "TRCT": TRCT,
