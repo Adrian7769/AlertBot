@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 last_alerts = {}
 last_alerts_lock = threading.Lock()
 
-# Fix No Valid Overlap Region Returning False
 class TRCT(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
