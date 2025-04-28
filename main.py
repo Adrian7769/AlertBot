@@ -45,7 +45,7 @@ def main():
     # Schedule Econ Alert at 8:55 AM EST every day
     scheduler.add_job(
         economic_alert.send_alert,
-        trigger=CronTrigger(hour=8, minute=55, timezone=est),
+        trigger=CronTrigger(hour=8, minute=59, timezone=est),
         name='Economic Alert',
         misfire_grace_time=60
     )

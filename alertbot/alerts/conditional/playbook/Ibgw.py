@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 last_alerts = {}
 last_alerts_lock = threading.Lock()
-
+# Adjust Prior session was rotational to BREAK from rotational Prior session balance
 class IBGW(Base):
     def __init__(self, product_name, variables):    
         super().__init__(product_name=product_name, variables=variables)
@@ -373,18 +373,18 @@ class IBGW(Base):
                     
                     # CRITERIA 3: Clear Magnet
                     if self.direction == "short":
-                        if (self.fd_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or
-                            self.td_vpoc >= self.ib_low - (self.ib_high - self.ib_low) or
-                            self.prior_vpoc >= self.ib_low - (self.ib_high - self.ib_low)):
+                        if ((self.ib_low - (self.ib_high - self.ib_low)) <= self.fd_vpoc < self.ib_low  or
+                            (self.ib_low - (self.ib_high - self.ib_low)) <= self.td_vpoc < self.ib_low  or
+                            (self.ib_low - (self.ib_high - self.ib_low)) <= self.prior_vpoc < self.ib_low):
                             self.c_magnet = "x"
                             logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: One of (fd_vpoc({self.fd_vpoc}), td_vpoc({self.td_vpoc}), prior_vpoc({self.prior_vpoc})) >= (ib_low({self.ib_low}) - IB_range({self.ib_high - self.ib_low})) -> [{self.c_magnet}]")
                         else:
                             self.c_magnet = "  "
                             logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: Clear magnet criteria not met -> [{self.c_magnet}]")
                     elif self.direction == "long":
-                        if (self.fd_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or
-                            self.td_vpoc <= self.ib_high + (self.ib_high - self.ib_low) or
-                            self.prior_vpoc <= self.ib_high + (self.ib_high - self.ib_low)):
+                        if ((self.ib_high + (self.ib_high - self.ib_low)) >= self.fd_vpoc > self.ib_high or
+                            (self.ib_high + (self.ib_high - self.ib_low)) >= self.td_vpoc > self.ib_high or
+                            (self.ib_high + (self.ib_high - self.ib_low)) >= self.prior_vpoc > self.ib_high):
                             self.c_magnet = "x"
                             logger.debug(f" IBGW | check | Product: {self.product_name} | Direction: {self.direction} | CRITERIA_3: One of (fd_vpoc({self.fd_vpoc}), td_vpoc({self.td_vpoc}), prior_vpoc({self.prior_vpoc})) <= (ib_high({self.ib_high}) + IB_range({self.ib_high - self.ib_low})) -> [{self.c_magnet}]")
                         else:
