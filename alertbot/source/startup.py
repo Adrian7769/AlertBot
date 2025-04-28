@@ -93,7 +93,27 @@ class Initialization(Base):
         cl_swing_bias = output_swing_bias['cl_swing_bias']
         logger.debug(f" Startup | grab_swing_bias | ES_SWING_Bias: {es_swing_bias} | NQ_SWING_Bias: {nq_swing_bias} | RTY_SWING_Bias: {rty_swing_bias} | CL_SWING_Bias: {cl_swing_bias}")
         return es_swing_bias, nq_swing_bias, rty_swing_bias, cl_swing_bias    
-    
+    def grab_long_term_bias(self, external_long_term_bias):
+        output_long_term_bias = {}
+        for task in external_long_term_bias:
+            workbook = client.open_by_key(task["sheet_id"])
+            sheet = workbook.worksheet(task["sheet_name"])
+            cell_value = sheet.cell(task["row_number"], task["col_number"]).value
+            logger.debug(f" Startup | grab_long_term_bias | Sheet: {task['sheet_name']} | Row: {task['row_number']}  | Column: {task['col_number']}")
+            if "ES" in task["sheet_name"]:
+                output_long_term_bias['es_long_term_bias'] = cell_value
+            elif "NQ" in task["sheet_name"]:
+                output_long_term_bias['nq_long_term_bias'] = cell_value
+            elif "RTY" in task["sheet_name"]:
+                output_long_term_bias['rty_long_term_bias'] = cell_value
+            elif "CL" in task["sheet_name"]:
+                output_long_term_bias['cl_long_term_bias'] = cell_value
+        es_long_term_bias = output_long_term_bias['es_long_Term_bias']
+        nq_long_term_bias = output_long_term_bias['nq_long_term_bias']
+        rty_long_term_bias = output_long_term_bias['rty_long_term_bias']
+        cl_long_term_bias = output_long_term_bias['cl_long_term_bias']
+        logger.debug(f" Startup | grab_long_term_bias | ES_LONG_TERM_BIAS: {es_long_term_bias} | NQ_LONG_TERM_BIAS: {nq_long_term_bias} | RTY_LONG_TERM_BIAS: {rty_long_term_bias} | CL_LONG_TERM_BIAS: {cl_long_term_bias}")
+        return es_long_term_bias, nq_long_term_bias, rty_long_term_bias, cl_long_term_bias        
     def prep_data(files):
         def safe_read_csv(filepath, **kwargs):
             max_retries = 5

@@ -154,7 +154,7 @@ class PRE_IB_BIAS(Base):
         embed = DiscordEmbed(
             title=title,
             description=(
-                f"> :warning:   **PRE-IB BIAS CHALLENGED**    :warning:\n"
+                f"> :warning:   **DAY BIAS CHALLENGED**    :warning:\n"
                 f"- Price Trading {settings['text']} **{self.price}**!"
             ),
             color=self.get_color()

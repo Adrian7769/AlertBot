@@ -33,6 +33,8 @@ def main():
     config.set_bias(es_bias, nq_bias, rty_bias, cl_bias)
     es_swing_bias, nq_swing_bias, rty_swing_bias, cl_swing_bias = initialization.grab_swing_bias(external_swing_bias)
     config.set_swing_bias(es_swing_bias, nq_swing_bias, rty_swing_bias, cl_swing_bias)    
+    es_long_term_bias, nq_long_term_bias, rty_long_term_bias, cl_long_term_bias = initialization.grab_long_term_bias(external_long_term_bias)
+    config.set_long_term_bias(es_long_term_bias, nq_long_term_bias, rty_long_term_bias, cl_long_term_bias)     
     # ---------------------- Publish Prep PDFs to Discord ------------------------ #
     ib_equity_alert = IB_Equity_Alert(files)
     ib_crude_alert = IB_Crude_Alert(files)
